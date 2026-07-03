@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0c0a0d;
+  --bg2: #17131a;
+  --brass: #c9a227;
+  --brass-dark: #6e5518;
+  --brass-light: #f0d27a;
+  --pink: #ff2fb0;
+  --pink-soft: #ff7fd0;
+  --cyan: #2fd6d6;
+  --amber: #ffb347;
+  --parchment: #ece0c4;
+  --ink: #2a2118;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg2: var(--bg2);
+  --color-brass: var(--brass);
+  --color-brass-dark: var(--brass-dark);
+  --color-brass-light: var(--brass-light);
+  --color-pink: var(--pink);
+  --color-pink-soft: var(--pink-soft);
+  --color-cyan: var(--cyan);
+  --color-amber: var(--amber);
+  --color-parchment: var(--parchment);
+  --color-ink: var(--ink);
+  --font-display: var(--font-display);
+  --font-mechanical: var(--font-mechanical);
+  --font-editorial: var(--font-editorial);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 50% -10%, #241c22 0%, var(--color-bg) 55%),
+    var(--color-bg);
+  color: var(--color-parchment);
+  font-family: var(--font-editorial), Georgia, serif;
+}
+
+body::before,
+body::after {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+}
+
+body::before {
+  z-index: 50;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 2.5%) 0,
+    rgb(255 255 255 / 2.5%) 1px,
+    transparent 2px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+body::after {
+  z-index: 49;
+  box-shadow: inset 0 0 220px 60px rgb(0 0 0 / 85%);
 }
