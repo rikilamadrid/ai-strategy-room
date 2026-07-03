@@ -5,6 +5,7 @@ import { DecisionBrief } from "@/components/brief/DecisionBrief";
 import { CostBadge } from "@/components/observability/CostBadge";
 import { QuestionPlate } from "@/components/table/QuestionPlate";
 import { WorkflowTimeline } from "@/components/workflow/WorkflowTimeline";
+import { useStrategySimulation } from "@/hooks/useStrategySimulation";
 import { useStrategyStore } from "@/stores/strategy-store";
 
 export function StrategyTable() {
@@ -12,6 +13,9 @@ export function StrategyTable() {
   const advisors = useStrategyStore((state) => state.advisors);
   const timeline = useStrategyStore((state) => state.timeline);
   const decisionBrief = useStrategyStore((state) => state.decisionBrief);
+
+  // Drives the timed workflow progression once a session starts.
+  useStrategySimulation();
 
   return (
     <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-[900px] flex-col px-5 py-7 sm:px-6 sm:py-10">
