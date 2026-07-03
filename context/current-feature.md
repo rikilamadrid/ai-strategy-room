@@ -2,7 +2,7 @@
 
 ## Status
 
-Not Started
+Done
 
 ## Goals
 
@@ -19,6 +19,8 @@ Not Started
 - Fixture content to mirror: mockup `context/ai-strategy-table-mockup.html` markup (advisor names/states lines 197-214, question line 218, timeline rows 225-229, brief lines 234-240).
 - Advisor states in the demo: Skeptic = `thinking`, Strategist = `complete` (argument ready), Human Advocate = `waiting`, Pragmatist = `waiting`.
 - Depends on nothing code-wise, but pairs with feature 01. This is pure data/types; no UI work.
+- Work started on branch `feature/core-types-and-fixtures`.
+- Verification: `npm run build` and `npm run lint` pass.
 
 ## Out of Scope
 
@@ -33,3 +35,4 @@ Not Started
 - **2026-06-29** — Added mock data (`src/lib/mock-data.ts`) and dashboard screenshots. Committed (`feat: add mock data and dashboard screenshots`).
 - **2026-07-03** — Added Vercel deployment planning to the feature roadmap: inserted early preview CI/CD as feature 06, renumbered the existing features through 21, added final production-readiness as feature 22, and aligned the overview/convention docs with the stateless Vercel deployment path.
 - **2026-07-03** — Completed feature 01 theme foundation: removed Create Next App boilerplate, added Brass & Neon Tailwind tokens, wired the three project typefaces, and applied the base room background with scanlines and vignette.
+- **2026-07-03** — Completed feature 02 core types and fixture data: added strict TypeScript strategy models in `src/types/strategy.ts`, added the canonical Madrid demo session in `src/lib/fixtures.ts`, and verified with `npm run build` plus `npm run lint`.
