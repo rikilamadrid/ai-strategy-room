@@ -79,6 +79,22 @@ Same workflow for every feature/fix:
 8. **Prune & close out** — immediately after a merge, without asking: delete the merged feature branch, refresh Status in `context/current-feature.md` (mark the feature complete), append the detailed entry to `context/HISTORY.md`, and add a user-facing summary to `CHANGELOG.md`. This is automatic — never wait to be told.
 9. **Review** — periodically review AI-generated code for input validation on the question field, rate limiting on `/api/strategy`, logic edge cases, and consistency with existing patterns.
 
+## Versioning
+
+Semantic Versioning (`MAJOR.MINOR.PATCH`) tracked in `package.json`, surfaced in `CHANGELOG.md` (Keep a Changelog format). We are in initial development (`0.y.z`).
+
+- **When to bump** (choose the highest that applies to what's merging):
+  - **MAJOR** — a breaking change to a stable public contract. Not expected before `1.0.0`; while on `0.y.z`, breaking changes go in a MINOR bump instead.
+  - **MINOR** — a backward-compatible feature (any completed `feature/*`). This is the common case here.
+  - **PATCH** — a backward-compatible bug fix or docs/chore that ships no new capability (any `fix/*`).
+- **`1.0.0`** is reserved for when the core AI workflow (planner → advisors → moderator) is live and the app is production-ready — don't cut it early.
+- **Every change lands under `## [Unreleased]`** in `CHANGELOG.md` first, grouped under `Added` / `Changed` / `Fixed` / `Removed` / `Deprecated` / `Security`. Write the human-readable summary — never paste raw git logs. The detailed narrative still goes in `context/HISTORY.md`.
+- **Cutting a release** (only when asked, or at a phase boundary): pick the bump per the rules above, then:
+  1. Rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD` and add a fresh empty `## [Unreleased]` above it.
+  2. Run the matching script — `npm run version:patch` | `version:minor` | `version:major` — which updates `package.json` and creates the `vX.Y.Z` git tag. (Requires a clean working tree.)
+  3. Update the compare/link footer in `CHANGELOG.md`.
+- Don't bump `package.json` by hand on every feature merge — accumulate under `[Unreleased]` and bump at release time.
+
 ## Communication & code-change discipline
 
 - Be concise and direct; explain non-obvious decisions briefly.
