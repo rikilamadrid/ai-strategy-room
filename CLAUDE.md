@@ -75,9 +75,8 @@ Same workflow for every feature/fix:
 5. **Iterate** — adjust based on feedback.
 6. **Commit** — only after the build passes and it's confirmed working. Ask before committing — never auto-commit.
 7. **Merge** — merge to main once approved.
-8. **Delete branch** — ask before deleting.
+8. **Prune & close out** — immediately after a merge, without asking: delete the merged feature branch, and update `context/current-feature.md` (refresh Status, mark the feature complete, and append an entry to History). This is automatic — never wait to be told.
 9. **Review** — periodically review AI-generated code for input validation on the question field, rate limiting on `/api/strategy`, logic edge cases, and consistency with existing patterns.
-10. **Close out** — mark the feature complete and log it in `context/current-feature.md` → History.
 
 ## Communication & code-change discipline
 

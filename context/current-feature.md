@@ -1,38 +1,38 @@
-# App Shell & Header Bar
+# Advisor Seats & Table Surface
 
 ## Status
 
-Complete - Merged
+In Progress — implemented, pending review/merge
 
 ## Goals
 
-- Build the outer page frame: centered max-width container (~900px) sitting above the scanlines/vignette layers from feature 01.
-- Create `src/components/table/StrategyTable.tsx` as the top-level layout shell that arranges header, table surface region, and the lower split region.
-- Build the header bar: brass-framed panel with the `AI Strategy Table` wordmark (Cinzel display face) and the `a cinematic decision chamber` eyebrow (Special Elite, cyan).
-- Create `src/components/observability/CostBadge.tsx`: a brass dial glyph with a static needle plus `SESSION COST $0.01` text, styled as an instrument reading.
-- Render the shell at the `/` route (`src/app/page.tsx`) with proportions matching the reference screenshot and mockup.
-- Verify in the browser, then run `npm run build` and `npm run lint`.
+- Build the table surface: brass-framed panel with the faint concentric-etching radial background and inset shadow, filling the table region of the shell.
+- Create `src/components/advisors/AdvisorSeat.tsx`: a single seat = brass pocket-gauge (glass face + needle) plus the advisor name (Special Elite) and role/status label (cyan).
+- Support three static visual states driven by the advisor's `status` prop: `waiting` (idle needle), `thinking` (amber bezel), `complete`/active (pink bezel glow). Needle angle differs per state.
+- Lay the four seats out in a 2×2 grid around the center, mapped from the fixture advisor array (feature 02).
+- Create `src/components/table/QuestionPlate.tsx`: centered brass plate with the `YOUR QUESTION` eyebrow and the italic question text from the fixture.
+- Rendered result visually matches the reference screenshot's table region.
 
 ## Notes
 
-- Active feature: `context/features/03-app-shell-and-header.md`.
-- Current repo state: on `main`, clean working tree, feature 02 has been merged (`merge: core types and fixtures`).
-- Work started on branch `feature/app-shell-and-header`.
-- Implementation added `StrategyTable` and `CostBadge`, rendered at `/`, with static placeholder regions for the table surface and lower split panels.
-- Verification: `npm run lint` passes; `npm run build` passes.
-- Served markup smoke check passed against the existing local dev server at `http://localhost:3004/`.
-- Browser visual verification is still pending because no in-app browser was available in this Codex session and no local Playwright package is installed.
-- Header markup and styles should follow `context/ai-strategy-table-mockup.html` `.headerbar`, `.wordmark`, `.gauge-badge`, and `.dial`.
-- Reference screenshot: `context/screenshots/Screenshot 2026-07-02 at 5.20.09 PM.png` (top header band).
-- Use the existing Brass & Neon tokens from feature 01; do not hardcode one-off palette or font values in components.
+- Active feature spec: `context/features/04-advisor-seats-and-table.md`.
+- Branch: `feature/advisor-seats-and-table` (off `main`, clean tree; feature 03 merged).
+- Implementation:
+  - `AdvisorSeat.tsx` — per-status visual config (`waiting`/`thinking`/`complete`/`error`) driving seat border/glow, needle color, needle glow, and a fixed needle angle. Needle rendered as a real element (not the mockup's pseudo-element) so angle/color are data-driven. **Static — no `tick` animation** (deferred to feature 09).
+  - `QuestionPlate.tsx` — brass plate, pink-soft `YOUR QUESTION` eyebrow, italic question from fixture.
+  - `StrategyTable.tsx` — replaced the table-surface placeholder with a `<section>` holding the 2×2 seats grid (mapped from `demoStrategySession.advisors`) + the question plate. Lower split panels remain placeholders (feature 05).
+- Status → role label mapping: `waiting → "waiting"`, `thinking → "thinking…"`, `complete → "argument ready"`, `error → "error"`.
+- Waiting seats show a subtle dimmed brass idle needle (spec calls for an idle needle; kept faint to match the mockup's near-empty waiting bezels).
+- Tokens only — Brass & Neon vars from feature 01; no one-off hex/font values.
+- Verification: `npm run build` passes (no type errors), `npm run lint` passes. Browser screenshot at `http://localhost:3004/` confirmed the table region matches the reference (Skeptic amber/thinking, Strategist pink/argument-ready, other two waiting).
 - This feature is static markup/display only. No AI calls, state machine, persistence, or real observability math.
 
 ## Out of Scope
 
-- Advisor seats, question plate, table etching, or connection lines (feature 04).
-- Timeline rows and decision brief content (feature 05).
-- Real token/call/cache/latency accounting (feature 16).
-- Any interactivity, Zustand/XState state, AI integration, schemas, or API routes.
+- Ticking-needle animation, neon flicker-on, streaming state changes (feature 09).
+- Connecting lines between advisors (agreement brass lines / conflict neon cracks).
+- Click-to-open focused advisor file-card panel.
+- Timeline and brief (feature 05).
 
 ## History
 

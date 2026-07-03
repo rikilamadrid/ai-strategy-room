@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Cinzel_Decorative,
   Cormorant_Garamond,
@@ -31,6 +31,21 @@ const cormorantGaramond = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "AI Strategy Table",
   description: "A cinematic multi-agent decision chamber.",
+  manifest: "/icons/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icons/icon-master.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/icons/favicon.ico",
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0c0a0d",
 };
 
 export default function RootLayout({
