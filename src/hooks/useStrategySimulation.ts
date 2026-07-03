@@ -2,7 +2,11 @@
 
 import { useEffect } from "react";
 
-import { demoStrategySession, simulatedAdvisorResults } from "@/lib/fixtures";
+import {
+  demoStrategySession,
+  simulatedAdvisorResults,
+  simulatedErrorAdvisorId,
+} from "@/lib/fixtures";
 import { useStrategyStore } from "@/stores/strategy-store";
 
 /**
@@ -70,14 +74,28 @@ export function useStrategySimulation(): void {
     // with completed gauges progressively.
     simulatedAdvisorResults.forEach((result, index) => {
       at(FIRST_ADVISOR_MS + index * ADVISOR_STAGGER_MS, () => {
+        const advisor = store().advisors.find((item) => item.id === result.id);
+        const name = advisor?.name ?? "Advisor";
+
+        // Failure path: the flagged advisor faults instead of filing. The rest
+        // of the workflow is unaffected — mapping/moderating still proceed, and
+        // "Try another angle" on the seat can recover it.
+        if (result.id === simulatedErrorAdvisorId) {
+          store().setAdvisorStatus(result.id, "error");
+          store().logAdvisorError(
+            `${name} instrument faulted — signal lost`,
+            formatElapsed(startedAt),
+          );
+          return;
+        }
+
         store().setAdvisorResult(result.id, {
           argument: result.argument,
           confidence: result.confidence,
           risks: result.risks,
           status: "complete",
         });
-        const advisor = store().advisors.find((item) => item.id === result.id);
-        log(`${advisor?.name ?? "Advisor"} filed its argument`);
+        log(`${name} filed its argument`);
       });
     });
 

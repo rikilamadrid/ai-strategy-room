@@ -48,6 +48,53 @@ export const simulatedAdvisorResults: SimulatedAdvisorResult[] = [
   },
 ];
 
+/**
+ * Failure-path flag for the streaming simulation. When set to an advisor id,
+ * that advisor faults during `advising` (enters `status: 'error'` instead of
+ * resolving) so the error + "Try another angle" recovery UX is verifiable. The
+ * rest of the workflow is unaffected. Default `null` — a clean demo run.
+ */
+export const simulatedErrorAdvisorId: string | null = null;
+
+/**
+ * Alternate "another angle" outputs used when an advisor is re-run via the
+ * "Try another angle" control. Keyed by advisor id — one fresh take each. Pure
+ * fixture data (zero cost budget); the retry resolves against this on a timer.
+ */
+export const advisorRetryResults: Record<string, SimulatedAdvisorResult> = {
+  strategist: {
+    id: "strategist",
+    argument:
+      "On second look, buy used and hold: if the Madrid move sticks, three years of lease payments buy nothing, while a two-year-old car keeps most of its value.",
+    confidence: 0.64,
+    risks: ["A used purchase bets on the move being permanent sooner than the data supports."],
+  },
+  skeptic: {
+    id: "skeptic",
+    argument:
+      "Reframing the risk: the real hazard isn't lease vs. buy, it's committing before residency is confirmed — either option signed early can trap capital you may need for the move itself.",
+    confidence: 0.55,
+    risks: [
+      "Signing anything pre-residency exposes you to relocation cost overruns.",
+      "Currency and rate shifts can move both lease and loan terms.",
+    ],
+  },
+  "human-advocate": {
+    id: "human-advocate",
+    argument:
+      "Another angle: a car you own can make a new city feel like home faster — the freedom to explore on a whim may matter more than the spreadsheet says.",
+    confidence: 0.57,
+    risks: ["Emotional attachment to owning can outrun what the budget comfortably supports."],
+  },
+  pragmatist: {
+    id: "pragmatist",
+    argument:
+      "Revised take: skip both for now. Ride-share and rental for the first few months costs less than any contract and buys time to learn what the commute actually demands.",
+    confidence: 0.61,
+    risks: ["Deferring a decision works only if day-to-day transport is genuinely optional at first."],
+  },
+};
+
 export const demoStrategySession: StrategySession = {
   status: "advising",
   question: "Should I lease or buy a car after moving to Madrid?",

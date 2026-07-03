@@ -30,7 +30,7 @@ export interface DecisionBrief {
 export interface TimelineEvent {
   timestampLabel: string;
   message: string;
-  state: "done" | "now" | "pending";
+  state: "done" | "now" | "pending" | "error";
 }
 
 export interface StrategySession {

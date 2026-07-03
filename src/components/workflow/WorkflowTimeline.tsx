@@ -14,6 +14,9 @@ const stateClassName: Record<TimelineEvent["state"], string> = {
   done: "text-success",
   now: "text-amber",
   pending: "text-cyan/55",
+  // Muted wax-red, lifted with a neon glow so it stays legible on gunmetal.
+  error:
+    "text-seal [text-shadow:0_0_7px_color-mix(in_srgb,var(--color-seal)_75%,transparent)]",
 };
 
 const MS_PER_CHAR = 18;

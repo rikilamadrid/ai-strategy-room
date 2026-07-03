@@ -13,6 +13,7 @@ MINOR version and fixes bump the PATCH version.
 
 - Streaming simulation: posing a question now drives a timed, fixture-backed progression through the workflow (planning → advisors deliberating in parallel → mapping → moderating → complete). Purely client-side on a timer — no network calls, no cost-budget impact (feature 09).
 - Mechanical motion (Framer Motion): advisor gauge needles tick while thinking and settle with a neon bezel flicker when an argument lands; timeline rows reveal punch-card + teletype style; the decision brief stamps in wax-seal style at completion. All motion is gated on `prefers-reduced-motion` (feature 09).
+- Advisor error state and single-advisor retry: an advisor can now fault mid-session — a dim, cracked seal-red gauge and a matching seal-red notice in the live-discussion timeline — while the rest of the table finishes unaffected. A brass "Try another angle" control re-runs just that one advisor (needle ticks, then settles on a fresh take) without rerunning the whole workflow. A fixture switch simulates the failure for testing; no cost-budget impact (feature 10).
 
 ## [0.2.0] - 2026-07-03
 
