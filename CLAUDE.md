@@ -22,14 +22,15 @@ All working context lives in `@context/`. Read the relevant files before startin
 
 ```
 context/
-├── current-feature.md              # What's being built right now — status, goals, notes, history log
+├── current-feature.md              # What's being built right now — status, goals, notes
+├── HISTORY.md                       # Detailed per-feature log, appended once each feature merges
 ├── features/                        # Specs for phases/features not yet started or already completed
 ├── screenshots/                      # Reference screenshots for UI being built
 ├── ai-strategy-table-project-overview.md # Full project spec: vision, workflow, UI/UX, data models, phases
 └── ai-strategy-table-mockup.html    # Visual/interaction reference prototype — Brass & Neon system
 ```
 
-- **`current-feature.md`** is the single source of truth for what's in progress. Update it as work happens — Status, Goals, Notes, and append to History once a feature is merged. Don't start work not described in it without asking.
+- **`current-feature.md`** is the single source of truth for what's in progress. Update it as work happens — Status, Goals, Notes. Once a feature is merged, append the detailed entry to `context/HISTORY.md` and a user-facing summary to the root `CHANGELOG.md` (Keep a Changelog format) — not to `current-feature.md`. Don't start work not described in `current-feature.md` without asking.
 - **`features/`** holds specs for other phases (past or upcoming) — check here before assuming a phase hasn't been planned yet.
 - **`screenshots/`** holds visual references for whatever UI is being built. If `current-feature.md` references a screenshot, look at it before writing markup.
 - **`ai-strategy-table-mockup.html`** is the design source of truth for the whole app, not just one feature — check it for the gauge motif, palette, and type roles regardless of which feature is active.
@@ -59,7 +60,7 @@ context/
 - Confirm `next build` runs with no type errors.
 - If you touched `lib/ai/schemas.ts` or `lib/ai/prompts.ts`, confirm the planner/advisor/moderator calls still validate against fixture data.
 - Confirm the session-cost badge reflects real token/call/cache counts, not a placeholder value.
-- Update `context/current-feature.md`: refresh Notes/Status, and if the feature is complete, mark it done and append an entry to History.
+- Update `context/current-feature.md`: refresh Notes/Status, and if the feature is complete, mark it done and append an entry to `context/HISTORY.md` plus a summary to `CHANGELOG.md`.
 - Leave a short note (in your final message, not committed to a file) on what was completed and what the next session should pick up.
 
 ---
@@ -75,7 +76,7 @@ Same workflow for every feature/fix:
 5. **Iterate** — adjust based on feedback.
 6. **Commit** — only after the build passes and it's confirmed working. Ask before committing — never auto-commit.
 7. **Merge** — merge to main once approved.
-8. **Prune & close out** — immediately after a merge, without asking: delete the merged feature branch, and update `context/current-feature.md` (refresh Status, mark the feature complete, and append an entry to History). This is automatic — never wait to be told.
+8. **Prune & close out** — immediately after a merge, without asking: delete the merged feature branch, refresh Status in `context/current-feature.md` (mark the feature complete), append the detailed entry to `context/HISTORY.md`, and add a user-facing summary to `CHANGELOG.md`. This is automatic — never wait to be told.
 9. **Review** — periodically review AI-generated code for input validation on the question field, rate limiting on `/api/strategy`, logic edge cases, and consistency with existing patterns.
 
 ## Communication & code-change discipline
@@ -108,7 +109,9 @@ Same workflow for every feature/fix:
 
 | File | Purpose |
 | --- | --- |
-| `context/current-feature.md` | The active task — status, goals, notes, history log |
+| `context/current-feature.md` | The active task — status, goals, notes |
+| `context/HISTORY.md` | Detailed per-feature log, appended on each merge |
+| `CHANGELOG.md` | User-facing change summary (Keep a Changelog format) |
 | `context/features/` | Specs for other phases/features, past or upcoming |
 | `context/screenshots/` | Reference screenshots for UI being built |
 | `context/ai-strategy-table-project-overview.md` | Full spec: vision, workflow, UI/UX, data models, phases |
