@@ -1,0 +1,26 @@
+import { CostBadge } from "@/components/observability/CostBadge";
+
+export function StrategyTable() {
+  return (
+    <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-[900px] flex-col px-5 py-7 sm:px-6 sm:py-10">
+      <header className="flex flex-col gap-5 rounded-md border-2 border-brass-dark bg-[linear-gradient(180deg,var(--color-bg2),var(--color-bg))] px-5 py-5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-brass)_15%,transparent),0_0_24px_color-mix(in_srgb,var(--color-pink)_8%,transparent)] sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <div>
+          <h1 className="m-0 font-display text-[clamp(2rem,5vw,3.25rem)] font-black leading-none text-brass-light [text-shadow:0_0_10px_var(--color-pink),0_0_2px_var(--color-brass-light)]">
+            AI Strategy Table
+          </h1>
+          <p className="mt-3 font-mechanical text-[11px] uppercase tracking-[0.24em] text-cyan [text-shadow:0_0_6px_color-mix(in_srgb,var(--color-cyan)_60%,transparent)] sm:text-xs">
+            a cinematic decision chamber
+          </p>
+        </div>
+        <CostBadge />
+      </header>
+
+      <div className="mt-7 min-h-[430px] rounded-lg border-2 border-brass-dark bg-[radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_7%,transparent),transparent_60%),repeating-radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_4%,transparent)_0_2px,transparent_2px_26px),var(--color-bg)] shadow-[inset_0_0_60px_rgb(0_0_0_/_70%)]" />
+
+      <div className="mt-7 grid gap-7 md:grid-cols-2">
+        <div className="min-h-[260px] rounded-lg border-2 border-brass-dark bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-bg2)_72%,transparent),color-mix(in_srgb,var(--color-bg)_92%,transparent))] shadow-[inset_0_0_42px_rgb(0_0_0_/_60%)]" />
+        <div className="min-h-[260px] rounded-lg border-2 border-brass-dark bg-parchment shadow-[inset_0_0_42px_rgb(42_33_24_/_18%)]" />
+      </div>
+    </main>
+  );
+}
