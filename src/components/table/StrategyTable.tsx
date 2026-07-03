@@ -1,6 +1,8 @@
 import { AdvisorSeat } from "@/components/advisors/AdvisorSeat";
+import { DecisionBrief } from "@/components/brief/DecisionBrief";
 import { CostBadge } from "@/components/observability/CostBadge";
 import { QuestionPlate } from "@/components/table/QuestionPlate";
+import { WorkflowTimeline } from "@/components/workflow/WorkflowTimeline";
 import { demoStrategySession } from "@/lib/fixtures";
 
 export function StrategyTable() {
@@ -28,8 +30,10 @@ export function StrategyTable() {
       </section>
 
       <div className="mt-7 grid gap-7 md:grid-cols-2">
-        <div className="min-h-[260px] rounded-lg border-2 border-brass-dark bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-bg2)_72%,transparent),color-mix(in_srgb,var(--color-bg)_92%,transparent))] shadow-[inset_0_0_42px_rgb(0_0_0_/_60%)]" />
-        <div className="min-h-[260px] rounded-lg border-2 border-brass-dark bg-parchment shadow-[inset_0_0_42px_rgb(42_33_24_/_18%)]" />
+        <WorkflowTimeline events={demoStrategySession.timeline} />
+        {demoStrategySession.decisionBrief ? (
+          <DecisionBrief brief={demoStrategySession.decisionBrief} />
+        ) : null}
       </div>
     </main>
   );
