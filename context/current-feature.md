@@ -1,22 +1,31 @@
-# Brass & Neon Theme Foundation
+# Core Types & Fixture Data
 
 ## Status
 
-Done
+Not Started
 
 ## Goals
 
-- Remove leftover Create Next App boilerplate from `src/app/page.tsx`, `src/app/layout.tsx`, and `src/app/globals.css`.
-- Define the full Brass & Neon palette as Tailwind v4 design tokens in `src/app/globals.css`.
-- Load Cinzel Decorative, Special Elite, and Cormorant Garamond via `next/font` and expose them as CSS variables.
-- Apply the base gunmetal background, scanlines, and vignette treatment from the mockup.
-- Verify `npm run build` passes.
+- Create `src/types/strategy.ts` with the core data models: `WorkflowStatus`, `Advisor`, and `DecisionBrief` exactly as defined in the project overview "Core Data Models".
+- Add a `TimelineEvent` type (timestamp label, message, state: `done | now | pending`) to model the live-discussion rows.
+- Add a `StrategySession` type that composes the question string, the advisor array, the timeline events, and the optional decision brief.
+- Create `src/lib/fixtures.ts` exporting one complete demo session matching the mockup: the Madrid lease-vs-buy question, four advisors (Skeptic/Strategist/Human Advocate/Pragmatist) in mixed states, five timeline rows, and a filled decision brief.
+- All types compile under TypeScript strict mode with no `any`; `npm run build` passes.
 
 ## Notes
 
-- Active feature: `context/features/01-theme-foundation.md`.
-- Mockup source: `context/ai-strategy-table-mockup.html` `:root`, body, scanlines, and vignette styles.
-- Keep scope to the page shell and global theme; advisor seats, header, table surface, timeline, and brief come later.
+- Active feature: `context/features/02-core-types-and-fixtures.md`.
+- Type definitions: project overview "Core Data Models" (`WorkflowStatus`, `Advisor`, `DecisionBrief`).
+- Fixture content to mirror: mockup `context/ai-strategy-table-mockup.html` markup (advisor names/states lines 197-214, question line 218, timeline rows 225-229, brief lines 234-240).
+- Advisor states in the demo: Skeptic = `thinking`, Strategist = `complete` (argument ready), Human Advocate = `waiting`, Pragmatist = `waiting`.
+- Depends on nothing code-wise, but pairs with feature 01. This is pure data/types; no UI work.
+
+## Out of Scope
+
+- Any React components or rendering (features 03-05).
+- Zustand store / state machine (feature 07).
+- Zod schemas; these are plain TypeScript types for now. Runtime validation schemas come in Phase 3 (feature 12).
+- Multiple demo scenarios (feature 17); this is a single canonical fixture.
 
 ## History
 
