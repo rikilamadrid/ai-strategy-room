@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress — implementation complete on `feature/strategy-store`; pending review/commit.
+Complete — merged to `main` on 2026-07-03. Branch pruned.
 
 ## Goals
 
@@ -44,3 +44,4 @@ In Progress — implementation complete on `feature/strategy-store`; pending rev
 - **2026-07-02** — Completed feature 04 advisor seats & table surface: added `AdvisorSeat` (per-status brass pocket-gauge), `QuestionPlate`, and the 2x2 seats grid in `StrategyTable`. Also wired the PWA icon set/favicons/web manifest into layout metadata and served the brand `favicon.ico` from `public/` root (removed the default `src/app/favicon.ico` — the app-dir convention broke the build on the non-RGBA `.ico` and overrode the public file). Verified with `npm run build`. Merged to `main`.
 - **2026-07-03** — Completed feature 05 live timeline & decision brief: added fixture-driven `WorkflowTimeline` and `DecisionBrief` panels, wired them into the lower split region, and added tokenized success/seal colors. Verified with `npm run lint`, `npm run build`, served markup smoke check, and Ricardo browser review. Merged to `main`.
 - **2026-07-03** — Completed feature 06 Vercel preview deployment & CI/CD docs: added GitHub Actions install/lint/build CI, replaced the stock README with project-specific local/deployment runbook, and documented the Vercel GitHub integration flow with URL placeholders pending account-side project setup. Verified with `npm run lint` and `npm run build`. Merged to `main`.
+- **2026-07-03** — Completed feature 07 strategy store & workflow state machine: installed `zustand@5.0.14`, added `src/stores/strategy-store.ts` with a seeded Zustand session store plus exported pure transition helpers enforcing the `idle -> planning -> advising -> mapping -> moderating -> complete` (+`error`) workflow, added explicit `status` to `StrategySession`/the demo fixture, and refactored `StrategyTable` and `CostBadge` to read from the store while keeping the Phase 1 screen visually unchanged. Verified with `npm run lint` and `npm run build`. Merged to `main`.
