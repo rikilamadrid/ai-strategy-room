@@ -1,40 +1,41 @@
-# Live Timeline & Decision Brief
+# Vercel Preview Deployment & CI/CD
 
 ## Status
 
-Complete — merged to `main`.
+In Progress — CI workflow and deployment documentation implemented; pending Vercel project connection/live URL.
 
 ## Goals
 
-- Create `src/components/workflow/WorkflowTimeline.tsx`: the left panel of the lower split — dark terminal-style list of timeline rows (Special Elite, cyan) with per-row states: `done` (green), `now` (amber), `pending` (dim). Renders from fixture `TimelineEvent[]`.
-- Create `src/components/brief/DecisionBrief.tsx`: the right panel — aged-parchment card with the recommendation (editorial italic, red left-rule), a `CONFIDENCE — <level>` line, and a bulleted list of agreement / risk / next-action items. Renders from the fixture `DecisionBrief`.
-- Wire both panels into the lower split region of `StrategyTable` as a two-column grid.
-- Full static prototype now matches the reference screenshot end-to-end (header, seats, question, timeline, brief).
-- `npm run build` passes; layout holds on desktop widths.
+- Create a lightweight GitHub Actions CI workflow that runs install, lint, and `npm run build` on pull requests and pushes.
+- Document the Vercel setup path in `README.md`, including the production/preview deployment flow and any required secrets or dashboard settings.
+- Record the eventual Vercel preview/live URL in `README.md` once the project is connected.
+- Keep the deployment path stateless: Vercel free tier, no database, no auth, no server-side session persistence, and no AI provider variables yet.
+- Verify the Phase 1 static prototype still builds cleanly before the feature is considered complete.
 
 ## Notes
 
-- Active feature spec: `context/features/05-timeline-and-brief.md`.
-- Branch: `feature/timeline-and-brief` (started from clean `main`; feature 04 already merged).
-- Timeline CSS + rows should follow mockup `.split`, `.panel`, and `.timeline` styles in `context/ai-strategy-table-mockup.html`.
-- Brief CSS + content should follow mockup `.brief`, `.rec`, and `.conf` styles in `context/ai-strategy-table-mockup.html`.
-- Reference screenshot: `context/screenshots/Screenshot 2026-07-02 at 5.20.09 PM.png` (bottom two panels).
-- Confidence is rendered as a qualitative label mapped from the numeric `confidence` field.
-- Implementation added `WorkflowTimeline` and `DecisionBrief`, then replaced the lower split placeholders in `StrategyTable` with fixture-driven panels.
-- Added `success` and `seal` color tokens from the mockup so state color and the brief rule stay token-driven.
+- Active feature spec: `context/features/06-vercel-preview-ci.md`.
+- Branch: `feature/vercel-preview-ci` (created from clean `main`; feature 05 already merged).
+- This feature happens immediately after feature 05 because the static visual prototype is now worth deploying.
+- Official docs checked on 2026-07-03:
+  - `actions/checkout` latest release is `v7.0.0`; use `actions/checkout@v7`.
+  - `actions/setup-node` latest release is `v6.4.0`; use `actions/setup-node@v6`.
+  - Vercel's GitHub integration creates automatic deployments on branch pushes, production updates from the production branch, and PR preview URLs.
+- Prefer Vercel's built-in GitHub integration for deployments; the GitHub Actions workflow should be CI/build signal only unless a later task explicitly requires custom Vercel CLI deploys.
+- CI should use `npm ci`, `npm run lint`, and `npm run build`.
+- Added `.github/workflows/ci.yml` with install/lint/build checks for pull requests plus pushes to `main`, `feature/**`, and `fix/**`.
+- Replaced the stock README with project-specific local development, CI, and Vercel setup documentation.
+- Vercel project creation and URL recording require the repository to be imported into the user's Vercel account.
 - Verification: `npm run lint` passes; `npm run build` passes.
-- Served markup smoke check passed against the existing local dev server at `http://localhost:3004/`.
-- Browser visual review approved by Ricardo.
-- Tokens only — use Brass & Neon vars from feature 01; no one-off palette or font stacks in components.
-- This feature is static markup/display only. No AI calls, state machine, persistence, real observability math, or animation.
-- Merged to `main` with `merge: timeline and decision brief panels`.
+- AI provider environment variables are not required yet; those arrive with feature 12 and are production-checked again in feature 22.
+- No UI changes are planned for this feature except minimal fixes if the deployed/static build exposes a rendering problem.
 
 ## Out of Scope
 
-- Wax-seal stamp-in reveal animation for the brief (Phase 2 streaming, feature 09).
-- Teletype reveal / replay of the timeline (Phase 2, features 09 and 11).
-- Real synthesized brief content from a model (Phase 3, feature 15).
-- Copy/share/export of the brief (v2, not in v1).
+- Real AI provider keys, model configuration, or API-route production behavior (features 12-16 and final readiness in feature 22).
+- Custom domain setup, launch checklist, or production monitoring polish (feature 22).
+- Adding a database, durable cache, auth, or user accounts.
+- Changing the app UI beyond any minimal fixes needed for the deployed Phase 1 build to render correctly.
 
 ## History
 
@@ -44,5 +45,5 @@ Complete — merged to `main`.
 - **2026-07-03** — Completed feature 01 theme foundation: removed Create Next App boilerplate, added Brass & Neon Tailwind tokens, wired the three project typefaces, and applied the base room background with scanlines and vignette.
 - **2026-07-03** — Completed feature 02 core types and fixture data: added strict TypeScript strategy models in `src/types/strategy.ts`, added the canonical Madrid demo session in `src/lib/fixtures.ts`, and verified with `npm run build` plus `npm run lint`.
 - **2026-07-02** — Completed feature 03 app shell and header: added `StrategyTable` layout shell and `CostBadge` brass dial, rendered at `/` with static placeholder regions. Verified with `npm run build` and `npm run lint`.
-- **2026-07-02** — Completed feature 04 advisor seats & table surface: added `AdvisorSeat` (per-status brass pocket-gauge), `QuestionPlate`, and the 2×2 seats grid in `StrategyTable`. Also wired the PWA icon set/favicons/web manifest into layout metadata and served the brand `favicon.ico` from `public/` root (removed the default `src/app/favicon.ico` — the app-dir convention broke the build on the non-RGBA `.ico` and overrode the public file). Verified with `npm run build`. Merged to `main`.
+- **2026-07-02** — Completed feature 04 advisor seats & table surface: added `AdvisorSeat` (per-status brass pocket-gauge), `QuestionPlate`, and the 2x2 seats grid in `StrategyTable`. Also wired the PWA icon set/favicons/web manifest into layout metadata and served the brand `favicon.ico` from `public/` root (removed the default `src/app/favicon.ico` — the app-dir convention broke the build on the non-RGBA `.ico` and overrode the public file). Verified with `npm run build`. Merged to `main`.
 - **2026-07-03** — Completed feature 05 live timeline & decision brief: added fixture-driven `WorkflowTimeline` and `DecisionBrief` panels, wired them into the lower split region, and added tokenized success/seal colors. Verified with `npm run lint`, `npm run build`, served markup smoke check, and Ricardo browser review. Merged to `main`.
