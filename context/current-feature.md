@@ -1,33 +1,38 @@
-# Core Types & Fixture Data
+# App Shell & Header Bar
 
 ## Status
 
-Done
+Complete - Merged
 
 ## Goals
 
-- Create `src/types/strategy.ts` with the core data models: `WorkflowStatus`, `Advisor`, and `DecisionBrief` exactly as defined in the project overview "Core Data Models".
-- Add a `TimelineEvent` type (timestamp label, message, state: `done | now | pending`) to model the live-discussion rows.
-- Add a `StrategySession` type that composes the question string, the advisor array, the timeline events, and the optional decision brief.
-- Create `src/lib/fixtures.ts` exporting one complete demo session matching the mockup: the Madrid lease-vs-buy question, four advisors (Skeptic/Strategist/Human Advocate/Pragmatist) in mixed states, five timeline rows, and a filled decision brief.
-- All types compile under TypeScript strict mode with no `any`; `npm run build` passes.
+- Build the outer page frame: centered max-width container (~900px) sitting above the scanlines/vignette layers from feature 01.
+- Create `src/components/table/StrategyTable.tsx` as the top-level layout shell that arranges header, table surface region, and the lower split region.
+- Build the header bar: brass-framed panel with the `AI Strategy Table` wordmark (Cinzel display face) and the `a cinematic decision chamber` eyebrow (Special Elite, cyan).
+- Create `src/components/observability/CostBadge.tsx`: a brass dial glyph with a static needle plus `SESSION COST $0.01` text, styled as an instrument reading.
+- Render the shell at the `/` route (`src/app/page.tsx`) with proportions matching the reference screenshot and mockup.
+- Verify in the browser, then run `npm run build` and `npm run lint`.
 
 ## Notes
 
-- Active feature: `context/features/02-core-types-and-fixtures.md`.
-- Type definitions: project overview "Core Data Models" (`WorkflowStatus`, `Advisor`, `DecisionBrief`).
-- Fixture content to mirror: mockup `context/ai-strategy-table-mockup.html` markup (advisor names/states lines 197-214, question line 218, timeline rows 225-229, brief lines 234-240).
-- Advisor states in the demo: Skeptic = `thinking`, Strategist = `complete` (argument ready), Human Advocate = `waiting`, Pragmatist = `waiting`.
-- Depends on nothing code-wise, but pairs with feature 01. This is pure data/types; no UI work.
-- Work started on branch `feature/core-types-and-fixtures`.
-- Verification: `npm run build` and `npm run lint` pass.
+- Active feature: `context/features/03-app-shell-and-header.md`.
+- Current repo state: on `main`, clean working tree, feature 02 has been merged (`merge: core types and fixtures`).
+- Work started on branch `feature/app-shell-and-header`.
+- Implementation added `StrategyTable` and `CostBadge`, rendered at `/`, with static placeholder regions for the table surface and lower split panels.
+- Verification: `npm run lint` passes; `npm run build` passes.
+- Served markup smoke check passed against the existing local dev server at `http://localhost:3004/`.
+- Browser visual verification is still pending because no in-app browser was available in this Codex session and no local Playwright package is installed.
+- Header markup and styles should follow `context/ai-strategy-table-mockup.html` `.headerbar`, `.wordmark`, `.gauge-badge`, and `.dial`.
+- Reference screenshot: `context/screenshots/Screenshot 2026-07-02 at 5.20.09 PM.png` (top header band).
+- Use the existing Brass & Neon tokens from feature 01; do not hardcode one-off palette or font values in components.
+- This feature is static markup/display only. No AI calls, state machine, persistence, or real observability math.
 
 ## Out of Scope
 
-- Any React components or rendering (features 03-05).
-- Zustand store / state machine (feature 07).
-- Zod schemas; these are plain TypeScript types for now. Runtime validation schemas come in Phase 3 (feature 12).
-- Multiple demo scenarios (feature 17); this is a single canonical fixture.
+- Advisor seats, question plate, table etching, or connection lines (feature 04).
+- Timeline rows and decision brief content (feature 05).
+- Real token/call/cache/latency accounting (feature 16).
+- Any interactivity, Zustand/XState state, AI integration, schemas, or API routes.
 
 ## History
 
@@ -36,3 +41,4 @@ Done
 - **2026-07-03** — Added Vercel deployment planning to the feature roadmap: inserted early preview CI/CD as feature 06, renumbered the existing features through 21, added final production-readiness as feature 22, and aligned the overview/convention docs with the stateless Vercel deployment path.
 - **2026-07-03** — Completed feature 01 theme foundation: removed Create Next App boilerplate, added Brass & Neon Tailwind tokens, wired the three project typefaces, and applied the base room background with scanlines and vignette.
 - **2026-07-03** — Completed feature 02 core types and fixture data: added strict TypeScript strategy models in `src/types/strategy.ts`, added the canonical Madrid demo session in `src/lib/fixtures.ts`, and verified with `npm run build` plus `npm run lint`.
+- **2026-07-02** — Completed feature 03 app shell and header: added `StrategyTable` layout shell and `CostBadge` brass dial, rendered at `/` with static placeholder regions. Verified with `npm run build` and `npm run lint`.
