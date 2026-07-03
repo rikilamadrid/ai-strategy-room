@@ -1,37 +1,41 @@
-# Strategy Store & Workflow State Machine
+# Question Input & Session Start
 
 ## Status
 
-Complete — merged to `main` on 2026-07-03. Branch pruned.
+In Progress — implemented on branch `feature/question-input`, awaiting Ricardo browser review + commit approval.
 
 ## Goals
 
-- Add Zustand and create `src/stores/strategy-store.ts` holding the full session in client state: `status`, `question`, `advisors`, `timeline`, and `decisionBrief`.
-- Model the workflow as an explicit state machine over `WorkflowStatus` (`idle -> planning -> advising -> mapping -> moderating -> complete`, plus `error`) and reject invalid transitions.
-- Expose granular actions for question updates, stage changes, advisor updates, timeline appends, brief updates, and reset.
-- Refactor the Phase 1 components to read from the store instead of importing fixtures directly, while seeding the store from the existing demo fixture so the static screen stays visually unchanged.
-- Keep the session in memory only with no persistence, and finish with a passing `npm run build`.
+- Turn the question plate into an interactive entry point: when `status === 'idle'`, the plate shows a text input + a brass "Convene the table" submit control; when a session is running, it shows the locked-in question (as in Phase 1).
+- On submit, call the store's `setQuestion` + `startSession`, transitioning `idle → planning` and resetting advisors to `waiting`.
+- Validate input client-side: non-empty, trimmed, reasonable max length; disable submit and show an inline instrument-style hint when invalid.
+- Empty/initial state: on first load with no session, the table presents the input prompt rather than fixture content.
+- Verify in browser: typing a question and submitting advances the visible status and clears prior results.
 
 ## Notes
 
-- Active feature spec: `context/features/07-strategy-store.md`.
-- Branch: `feature/strategy-store`.
-- This is the first Phase 2 workflow-state feature and becomes the backbone for question input, streaming simulation, retry behavior, and AI orchestration.
-- Use Zustand for v1 simplicity, but keep state transitions explicit and unit-testable in pure helper functions rather than burying workflow rules in component code.
-- Seed the store from `demoStrategySession` on first load so the current Phase 1 table remains visually unchanged while components migrate to store selectors.
-- Keep the app stateless: no localStorage, database, auth, or server session storage.
-- Official package check on 2026-07-03: `zustand` current npm version is `5.0.14`; installed that exact version.
-- Added `src/stores/strategy-store.ts` with exported pure workflow transition helpers plus a seeded Zustand store.
-- Refactored `StrategyTable` into the client boundary that reads `status`, `question`, `advisors`, `timeline`, and `decisionBrief` from the store.
-- Updated `StrategySession` and the demo fixture to carry explicit workflow `status`, and wired `CostBadge` to read the workflow stage from store-backed props while keeping the existing static visual.
-- Verification: `npm run lint` passes; `npm run build` passes.
+- Active feature spec: `context/features/08-question-input.md`.
+- Branch: `feature/question-input` (to be created).
+- Question plate to extend: `src/components/table/QuestionPlate.tsx` (feature 04) + mockup `.question-plate` styling (lines 139–149).
+- This is the first `'use client'` interactive surface — keep it isolated (only client where interactivity is needed).
+- Store actions confirmed present in `src/stores/strategy-store.ts`: `setQuestion`, `startSession`, `reset`, plus `WorkflowStatus` transitions.
+- **Depends on:** feature 07 (store actions `setQuestion`, `startSession`, `reset`) — done.
+
+### Implementation
+
+- Store now initializes to an `IDLE_SESSION` (status `idle`, empty question, advisors reset to `waiting`, empty timeline, no brief). The demo roster still supplies advisor names/purposes; `reset()` left unchanged (still returns the demo session — not wired to any UI yet, out of scope here).
+- `QuestionPlate` is now a `'use client'` component. When `status === 'idle'` it renders a `<form>` with a labeled textarea + brass "Convene the table" submit; otherwise it renders the locked-in question exactly as before.
+- Validation: trimmed non-empty required (submit disabled otherwise); hard `maxLength={280}` cap; instrument-style hint shows "characters left" normally and an amber "A question is required" when the field holds only whitespace.
+- On submit: `setQuestion(trimmed)` then `startSession(trimmed)` → `idle → planning`, advisors reset to `waiting`, prior timeline/brief cleared.
+- `StrategyTable` drops the unused `question` selector and renders `<QuestionPlate />` (self-sourced from store).
+- Verified: `npm run lint` and `npm run build` pass; served HTML confirms first load shows the input prompt (no fixture question/brief/advisor-result content leaks).
 
 ## Out of Scope
 
-- Timers, simulated progression, or streaming playback behavior (feature 09).
-- Real planner/advisor/moderator API calls (features 12-15).
-- Persistence of any kind, including localStorage.
-- UI expansion beyond the minimal refactor needed to source Phase 1 components from the store.
+- What happens *after* `planning` (the staged progression) — that is feature 09.
+- Real planner/AI classification of the question (Phase 3, feature 13).
+- Prebuilt demo-scenario picker (feature 17).
+- Autocomplete, question history, or saved sessions (v2).
 
 ## History
 

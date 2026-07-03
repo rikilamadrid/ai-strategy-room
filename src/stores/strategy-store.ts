@@ -99,6 +99,16 @@ export function canTransitionWorkflow(
 
 const INITIAL_SESSION = cloneSession(demoStrategySession);
 
+// First load presents an empty room waiting for a question — the demo roster
+// still provides advisor names/purposes, but no session is in flight yet.
+const IDLE_SESSION: StrategyStoreSnapshot = {
+  status: "idle",
+  question: "",
+  advisors: createPlanningAdvisors(INITIAL_SESSION.advisors),
+  timeline: [],
+  decisionBrief: undefined,
+};
+
 function createPlanningSession(question: string): StrategyStoreSnapshot {
   const normalizedQuestion = question.trim();
 
@@ -112,7 +122,7 @@ function createPlanningSession(question: string): StrategyStoreSnapshot {
 }
 
 export const useStrategyStore = create<StrategyStoreState>((set) => ({
-  ...INITIAL_SESSION,
+  ...IDLE_SESSION,
   setQuestion: (question) => {
     set({ question });
   },
