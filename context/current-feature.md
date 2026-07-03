@@ -2,20 +2,20 @@
 
 ## Status
 
-In Progress — CI workflow and deployment documentation implemented; pending Vercel project connection/live URL.
+Complete — merged to `main`; pending account-side Vercel project connection/live URL.
 
 ## Goals
 
 - Create a lightweight GitHub Actions CI workflow that runs install, lint, and `npm run build` on pull requests and pushes.
 - Document the Vercel setup path in `README.md`, including the production/preview deployment flow and any required secrets or dashboard settings.
-- Record the eventual Vercel preview/live URL in `README.md` once the project is connected.
+- Add placeholder slots for the eventual Vercel preview/live URLs in `README.md` once the project is connected.
 - Keep the deployment path stateless: Vercel free tier, no database, no auth, no server-side session persistence, and no AI provider variables yet.
 - Verify the Phase 1 static prototype still builds cleanly before the feature is considered complete.
 
 ## Notes
 
 - Active feature spec: `context/features/06-vercel-preview-ci.md`.
-- Branch: `feature/vercel-preview-ci` (created from clean `main`; feature 05 already merged).
+- Branch: `feature/vercel-preview-ci` (merged to `main` with `merge: vercel preview ci docs`).
 - This feature happens immediately after feature 05 because the static visual prototype is now worth deploying.
 - Official docs checked on 2026-07-03:
   - `actions/checkout` latest release is `v7.0.0`; use `actions/checkout@v7`.
@@ -27,6 +27,7 @@ In Progress — CI workflow and deployment documentation implemented; pending Ve
 - Replaced the stock README with project-specific local development, CI, and Vercel setup documentation.
 - Vercel project creation and URL recording require the repository to be imported into the user's Vercel account.
 - Verification: `npm run lint` passes; `npm run build` passes.
+- Merged to `main` with `merge: vercel preview ci docs`.
 - AI provider environment variables are not required yet; those arrive with feature 12 and are production-checked again in feature 22.
 - No UI changes are planned for this feature except minimal fixes if the deployed/static build exposes a rendering problem.
 
@@ -47,3 +48,4 @@ In Progress — CI workflow and deployment documentation implemented; pending Ve
 - **2026-07-02** — Completed feature 03 app shell and header: added `StrategyTable` layout shell and `CostBadge` brass dial, rendered at `/` with static placeholder regions. Verified with `npm run build` and `npm run lint`.
 - **2026-07-02** — Completed feature 04 advisor seats & table surface: added `AdvisorSeat` (per-status brass pocket-gauge), `QuestionPlate`, and the 2x2 seats grid in `StrategyTable`. Also wired the PWA icon set/favicons/web manifest into layout metadata and served the brand `favicon.ico` from `public/` root (removed the default `src/app/favicon.ico` — the app-dir convention broke the build on the non-RGBA `.ico` and overrode the public file). Verified with `npm run build`. Merged to `main`.
 - **2026-07-03** — Completed feature 05 live timeline & decision brief: added fixture-driven `WorkflowTimeline` and `DecisionBrief` panels, wired them into the lower split region, and added tokenized success/seal colors. Verified with `npm run lint`, `npm run build`, served markup smoke check, and Ricardo browser review. Merged to `main`.
+- **2026-07-03** — Completed feature 06 Vercel preview deployment & CI/CD docs: added GitHub Actions install/lint/build CI, replaced the stock README with project-specific local/deployment runbook, and documented the Vercel GitHub integration flow with URL placeholders pending account-side project setup. Verified with `npm run lint` and `npm run build`. Merged to `main`.
