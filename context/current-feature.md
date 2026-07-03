@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress — branch `feature/errors-and-retry` (created from `main` at 0.2.0). Feature 09 (streaming simulation) is complete and merged. Active spec: `context/features/10-errors-and-single-advisor-retry.md`.
+Complete — merged to `main` 2026-07-03 (branch `feature/errors-and-retry` pruned). Detailed entry in `context/HISTORY.md`; user-facing summary under `## [Unreleased]` in `CHANGELOG.md`. Next up: feature 11 (timeline replay), which closes out Phase 2 — Workflow state.
 
 ## Goals
 
