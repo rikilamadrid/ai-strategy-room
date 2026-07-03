@@ -1,3 +1,7 @@
+"use client";
+
+import { motion, useReducedMotion } from "framer-motion";
+
 import type { DecisionBrief as DecisionBriefModel } from "@/types/strategy";
 
 interface DecisionBriefProps {
@@ -17,6 +21,7 @@ function getConfidenceLabel(confidence: number) {
 }
 
 export function DecisionBrief({ brief }: DecisionBriefProps) {
+  const reduceMotion = useReducedMotion();
   const confidenceLabel = getConfidenceLabel(brief.confidence);
   const briefItems = [
     ...brief.agreements.map((item) => `Agreement: ${item}`),
@@ -24,8 +29,20 @@ export function DecisionBrief({ brief }: DecisionBriefProps) {
     `Next action: ${brief.nextAction}`,
   ];
 
+  // The brief only mounts once the workflow is complete, so this plays exactly
+  // once: a wax seal slamming down and settling — not a soft fade-in.
+  const stamp = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, scale: 1.5, rotate: -6 },
+        animate: { opacity: 1, scale: [1.5, 0.94, 1], rotate: [-6, 2, 0] },
+        transition: { duration: 0.42, times: [0, 0.6, 1] },
+      };
+
   return (
-    <section className="min-h-[260px] rounded-md border-2 border-brass-dark bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-parchment)_96%,white),color-mix(in_srgb,var(--color-brass-light)_54%,var(--color-parchment)))] px-[18px] py-4 text-ink shadow-[inset_0_0_42px_rgb(42_33_24_/_18%)]">
+    <motion.section
+      {...stamp}
+      className="min-h-[260px] rounded-md border-2 border-brass-dark bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-parchment)_96%,white),color-mix(in_srgb,var(--color-brass-light)_54%,var(--color-parchment)))] px-[18px] py-4 text-ink shadow-[inset_0_0_42px_rgb(42_33_24_/_18%)]">
       <h2 className="mb-5 mt-0 font-display text-base font-black uppercase tracking-[0.04em] text-brass-dark">
         Decision brief
       </h2>
@@ -40,6 +57,6 @@ export function DecisionBrief({ brief }: DecisionBriefProps) {
           <li key={item}>{item}</li>
         ))}
       </ul>
-    </section>
+    </motion.section>
   );
 }

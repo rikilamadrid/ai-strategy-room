@@ -1,5 +1,53 @@
 import type { StrategySession } from "@/types/strategy";
 
+/**
+ * Resolved advisor outputs the streaming *simulation* reveals one at a time.
+ * Pure fixture data — no network calls, no LLM requests (zero cost budget
+ * impact). The order here is the order advisors settle during `advising`.
+ */
+export interface SimulatedAdvisorResult {
+  id: string;
+  argument: string;
+  confidence: number;
+  risks: string[];
+}
+
+export const simulatedAdvisorResults: SimulatedAdvisorResult[] = [
+  {
+    id: "strategist",
+    argument:
+      "Lease first to preserve flexibility while residency, neighborhood, commute, and parking needs settle into a reliable pattern.",
+    confidence: 0.72,
+    risks: [
+      "Buying too early could lock in a car that fits the wrong city routine.",
+    ],
+  },
+  {
+    id: "skeptic",
+    argument:
+      "Ownership only pays off past the break-even mileage, and that assumes residency and insurance costs hold steady — neither is settled yet.",
+    confidence: 0.58,
+    risks: [
+      "Residency timing may change the true cost of ownership.",
+      "Lease contracts can hide early termination penalties.",
+    ],
+  },
+  {
+    id: "human-advocate",
+    argument:
+      "A short lease lowers the emotional stakes of a new-city move — no resale hassle if plans change, and freedom to trade up once life here feels permanent.",
+    confidence: 0.6,
+    risks: ["A lease can feel like money spent with nothing owned at the end."],
+  },
+  {
+    id: "pragmatist",
+    argument:
+      "Leasing needs the least cash and effort right now: one predictable monthly figure, maintenance included, and no resale to manage mid-move.",
+    confidence: 0.66,
+    risks: ["Mileage caps could bite if the commute turns out longer than expected."],
+  },
+];
+
 export const demoStrategySession: StrategySession = {
   status: "advising",
   question: "Should I lease or buy a car after moving to Madrid?",

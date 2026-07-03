@@ -34,12 +34,20 @@ export interface StrategyStoreSnapshot {
 }
 
 export interface StrategyStoreState extends StrategyStoreSnapshot {
+  /**
+   * Monotonic counter bumped on every `startSession`. The streaming simulation
+   * keys its timed run on this so a fresh session cancels the previous run and
+   * restarts cleanly. `0` means no session has started.
+   */
+  runId: number;
   setQuestion: (question: string) => void;
   startSession: (question?: string) => void;
   advanceStage: (nextStatus?: WorkflowStatus) => boolean;
   setAdvisorStatus: (id: Advisor["id"], status: Advisor["status"]) => void;
   setAdvisorResult: (id: Advisor["id"], patch: AdvisorResultPatch) => void;
   appendTimelineEvent: (event: TimelineEvent) => void;
+  logTimelineEvent: (message: string, timestampLabel: string) => void;
+  sealTimeline: () => void;
   setBrief: (brief?: DecisionBrief) => void;
   reset: () => void;
 }
@@ -123,6 +131,7 @@ function createPlanningSession(question: string): StrategyStoreSnapshot {
 
 export const useStrategyStore = create<StrategyStoreState>((set) => ({
   ...IDLE_SESSION,
+  runId: 0,
   setQuestion: (question) => {
     set({ question });
   },
@@ -134,7 +143,7 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
         return state;
       }
 
-      return createPlanningSession(nextQuestion);
+      return { ...createPlanningSession(nextQuestion), runId: state.runId + 1 };
     });
   },
   advanceStage: (nextStatus) => {
@@ -182,6 +191,25 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
       timeline: [...state.timeline, event],
     }));
   },
+  logTimelineEvent: (message, timestampLabel) => {
+    // The newest event is the live `now` row; any prior `now` resolves to `done`
+    // so the timeline reads as a single advancing head with a green history.
+    set((state) => ({
+      timeline: [
+        ...state.timeline.map((event) =>
+          event.state === "now" ? { ...event, state: "done" as const } : event,
+        ),
+        { message, timestampLabel, state: "now" as const },
+      ],
+    }));
+  },
+  sealTimeline: () => {
+    set((state) => ({
+      timeline: state.timeline.map((event) =>
+        event.state === "now" ? { ...event, state: "done" as const } : event,
+      ),
+    }));
+  },
   setBrief: (brief) => {
     set((state) => {
       if (
@@ -206,6 +234,6 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
     });
   },
   reset: () => {
-    set(cloneSession(demoStrategySession));
+    set({ ...cloneSession(demoStrategySession), runId: 0 });
   },
 }));

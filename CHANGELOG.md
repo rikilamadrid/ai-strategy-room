@@ -9,6 +9,11 @@ MINOR version and fixes bump the PATCH version.
 
 ## [Unreleased]
 
+### Added
+
+- Streaming simulation: posing a question now drives a timed, fixture-backed progression through the workflow (planning → advisors deliberating in parallel → mapping → moderating → complete). Purely client-side on a timer — no network calls, no cost-budget impact (feature 09).
+- Mechanical motion (Framer Motion): advisor gauge needles tick while thinking and settle with a neon bezel flicker when an argument lands; timeline rows reveal punch-card + teletype style; the decision brief stamps in wax-seal style at completion. All motion is gated on `prefers-reduced-motion` (feature 09).
+
 ## [0.2.0] - 2026-07-03
 
 First milestone release: the cinematic Brass & Neon decision room as a static,

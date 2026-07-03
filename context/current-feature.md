@@ -1,41 +1,38 @@
-# Question Input & Session Start
+# Streaming Simulation & Mechanical Motion
 
 ## Status
 
-Complete — merged to `main` on 2026-07-03. Branch pruned.
+In Progress — branch `feature/streaming-simulation` created, Framer Motion `12.42.2` installed (2026-07-03).
+
+Interpretation note: the "advisor arguments reveal teletype/punch-card style" goal is realized on the **timeline rows** (each advisor filing its argument types in), per overview lines 90 & 117 — "the timeline can replay the order of the workflow, teletype-style." The dedicated per-advisor argument panel (overview line 89) is a later feature and is out of scope here.
 
 ## Goals
 
-- Turn the question plate into an interactive entry point: when `status === 'idle'`, the plate shows a text input + a brass "Convene the table" submit control; when a session is running, it shows the locked-in question (as in Phase 1).
-- On submit, call the store's `setQuestion` + `startSession`, transitioning `idle → planning` and resetting advisors to `waiting`.
-- Validate input client-side: non-empty, trimmed, reasonable max length; disable submit and show an inline instrument-style hint when invalid.
-- Empty/initial state: on first load with no session, the table presents the input prompt rather than fixture content.
-- Verify in browser: typing a question and submitting advances the visible status and clears prior results.
+- Add Framer Motion and drive a timed, fixture-backed progression through the workflow stages after `startSession`: `planning → advising` (advisors resolve in parallel) `→ mapping → moderating → complete`.
+- Advisor gauges animate per state: idle needle still, `thinking` needle ticks back and forth (amber), `complete` needle settles and the bezel flickers on (pink) — neon flicker-on, not fade-in.
+- Timeline rows append and advance in real time (the `now` row is amber; resolved rows flip to `done`/green) as each simulated stage completes.
+- Advisor arguments reveal teletype/punch-card style rather than appearing instantly.
+- The decision brief "stamps in" with a wax-seal-style reveal only once `status === 'complete'` (not a soft fade).
+- Motion is mechanical (ticking, flicker, shutter/gear transition between stages), and every glow tracks a real state — no idle decoration.
 
 ## Notes
 
-- Active feature spec: `context/features/08-question-input.md`.
-- Branch: `feature/question-input` (to be created).
-- Question plate to extend: `src/components/table/QuestionPlate.tsx` (feature 04) + mockup `.question-plate` styling (lines 139–149).
-- This is the first `'use client'` interactive surface — keep it isolated (only client where interactivity is needed).
-- Store actions confirmed present in `src/stores/strategy-store.ts`: `setQuestion`, `startSession`, `reset`, plus `WorkflowStatus` transitions.
-- **Depends on:** feature 07 (store actions `setQuestion`, `startSession`, `reset`) — done.
-
-### Implementation
-
-- Store now initializes to an `IDLE_SESSION` (status `idle`, empty question, advisors reset to `waiting`, empty timeline, no brief). The demo roster still supplies advisor names/purposes; `reset()` left unchanged (still returns the demo session — not wired to any UI yet, out of scope here).
-- `QuestionPlate` is now a `'use client'` component. When `status === 'idle'` it renders a `<form>` with a labeled textarea + brass "Convene the table" submit; otherwise it renders the locked-in question exactly as before.
-- Validation: trimmed non-empty required (submit disabled otherwise); hard `maxLength={280}` cap; instrument-style hint shows "characters left" normally and an amber "A question is required" when the field holds only whitespace.
-- On submit: `setQuestion(trimmed)` then `startSession(trimmed)` → `idle → planning`, advisors reset to `waiting`, prior timeline/brief cleared.
-- `StrategyTable` drops the unused `question` selector and renders `<QuestionPlate />` (self-sourced from store).
-- Verified: `npm run lint` and `npm run build` pass; served HTML confirms first load shows the input prompt (no fixture question/brief/advisor-result content leaks).
+- Active feature spec: `context/features/09-streaming-simulation-and-motion.md`.
+- Branch: `feature/streaming-simulation` (to be created).
+- Ticking-needle keyframe reference: mockup `context/ai-strategy-table-mockup.html` `@keyframes tick` + `.seat.thinking` (lines 111–135).
+- Timeline row states (`done`/`now`/pending) already modeled in feature 02; here they animate over time.
+- Motion library: Framer Motion (verify current stable version against docs before installing). Motion direction: overview "Motion" section.
+- Store trigger confirmed: `startSession` (feature 07/08) transitions `idle → planning`; this feature advances the machine forward on a timer through the remaining stages.
+- **Depends on:** features 07 (state machine to advance) and 08 (something to trigger start) — both done. Uses the same fixture data — no network calls.
+- **Cost budget:** no effect — pure client-side simulation on a timer, zero LLM requests.
+- Respect `prefers-reduced-motion` at build time where cheap, but full still-frame a11y handling is feature 19 (out of scope here).
 
 ## Out of Scope
 
-- What happens *after* `planning` (the staged progression) — that is feature 09.
-- Real planner/AI classification of the question (Phase 3, feature 13).
-- Prebuilt demo-scenario picker (feature 17).
-- Autocomplete, question history, or saved sessions (v2).
+- Real streamed tokens from a model (Phase 3, feature 14) — this is a *simulation* on a timer.
+- Error/retry paths (feature 10) and replay control (feature 11).
+- Reduced-motion still-frame handling (Phase 4 accessibility, feature 19) — build motion here, gate it for a11y later.
+- Agreement/conflict connector lines (later polish, not required for v1 sign-off).
 
 ## History
 
