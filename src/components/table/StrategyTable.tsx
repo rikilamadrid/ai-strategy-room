@@ -1,4 +1,7 @@
+import { AdvisorSeat } from "@/components/advisors/AdvisorSeat";
 import { CostBadge } from "@/components/observability/CostBadge";
+import { QuestionPlate } from "@/components/table/QuestionPlate";
+import { demoStrategySession } from "@/lib/fixtures";
 
 export function StrategyTable() {
   return (
@@ -15,7 +18,14 @@ export function StrategyTable() {
         <CostBadge />
       </header>
 
-      <div className="mt-7 min-h-[430px] rounded-lg border-2 border-brass-dark bg-[radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_7%,transparent),transparent_60%),repeating-radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_4%,transparent)_0_2px,transparent_2px_26px),var(--color-bg)] shadow-[inset_0_0_60px_rgb(0_0_0_/_70%)]" />
+      <section className="mt-7 rounded-lg border-2 border-brass-dark bg-[radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_7%,transparent),transparent_60%),repeating-radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_4%,transparent)_0_2px,transparent_2px_26px),var(--color-bg)] px-5 py-[34px] shadow-[inset_0_0_60px_rgb(0_0_0_/_70%)]">
+        <div className="mx-auto mb-[26px] grid max-w-[560px] grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-[60px] sm:gap-y-[18px]">
+          {demoStrategySession.advisors.map((advisor) => (
+            <AdvisorSeat key={advisor.id} advisor={advisor} />
+          ))}
+        </div>
+        <QuestionPlate question={demoStrategySession.question} />
+      </section>
 
       <div className="mt-7 grid gap-7 md:grid-cols-2">
         <div className="min-h-[260px] rounded-lg border-2 border-brass-dark bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-bg2)_72%,transparent),color-mix(in_srgb,var(--color-bg)_92%,transparent))] shadow-[inset_0_0_42px_rgb(0_0_0_/_60%)]" />
