@@ -1,38 +1,36 @@
-# Streaming Simulation & Mechanical Motion
+# Errors & Single-Advisor Retry
 
 ## Status
 
-Complete — merged to `main` 2026-07-03 (branch `feature/streaming-simulation` pruned). Detailed entry in `context/HISTORY.md`; user-facing summary under `## [Unreleased]` in `CHANGELOG.md`. Next up: feature 10 (error/retry paths) or feature 11 (replay control), both deferred out of this feature.
-
-Interpretation note: the "advisor arguments reveal teletype/punch-card style" goal was realized on the **timeline rows** (each advisor filing its argument types in), per overview lines 90 & 117 — "the timeline can replay the order of the workflow, teletype-style." The dedicated per-advisor argument panel (overview line 89) is a later feature and was out of scope here.
+In Progress — branch `feature/errors-and-retry` (created from `main` at 0.2.0). Feature 09 (streaming simulation) is complete and merged. Active spec: `context/features/10-errors-and-single-advisor-retry.md`.
 
 ## Goals
 
-- Add Framer Motion and drive a timed, fixture-backed progression through the workflow stages after `startSession`: `planning → advising` (advisors resolve in parallel) `→ mapping → moderating → complete`.
-- Advisor gauges animate per state: idle needle still, `thinking` needle ticks back and forth (amber), `complete` needle settles and the bezel flickers on (pink) — neon flicker-on, not fade-in.
-- Timeline rows append and advance in real time (the `now` row is amber; resolved rows flip to `done`/green) as each simulated stage completes.
-- Advisor arguments reveal teletype/punch-card style rather than appearing instantly.
-- The decision brief "stamps in" with a wax-seal-style reveal only once `status === 'complete'` (not a soft fade).
-- Motion is mechanical (ticking, flicker, shutter/gear transition between stages), and every glow tracks a real state — no idle decoration.
+- **Advisor error state.** An individual advisor can enter `status: 'error'`. Render it in-theme on the seat — a dim/cracked seal-red bezel and a "signal lost" label, needle slumped, no neon flicker (flicker is reserved for a completed argument). No generic browser alert.
+- **Workflow-level error notice in the timeline.** When an advisor faults, append a timeline row in the seal-red error tone (a new `TimelineEvent` `state: 'error'`) so the failure is legible in the live-discussion log. The rest of the workflow keeps running — a single advisor erroring does **not** halt the session.
+- **"Try another angle" control.** On a `complete` or `error` advisor, a small brass control re-runs *only that advisor*: it re-enters `thinking` (needle ticks) and then settles back to `complete` with an alternate fixture argument. It never reruns the whole workflow (hard rule) — no new stage transitions, no re-plan, no moderator rerun.
+- **Simulated failure path for testing.** A fixture flag (`simulatedErrorAdvisorId`) forces one advisor to error during the simulated run so the error + recovery UX is verifiable. Default `null` (clean demo run); flip to an advisor id to exercise the path.
+- Verify in browser: force an advisor error, confirm the other three advisors + mapping/moderating/brief are unaffected, then hit "Try another angle" to take the errored advisor back to completion.
 
 ## Notes
 
-- Active feature spec: `context/features/09-streaming-simulation-and-motion.md`.
-- Branch: `feature/streaming-simulation` (to be created).
-- Ticking-needle keyframe reference: mockup `context/ai-strategy-table-mockup.html` `@keyframes tick` + `.seat.thinking` (lines 111–135).
-- Timeline row states (`done`/`now`/pending) already modeled in feature 02; here they animate over time.
-- Motion library: Framer Motion (verify current stable version against docs before installing). Motion direction: overview "Motion" section.
-- Store trigger confirmed: `startSession` (feature 07/08) transitions `idle → planning`; this feature advances the machine forward on a timer through the remaining stages.
-- **Depends on:** features 07 (state machine to advance) and 08 (something to trigger start) — both done. Uses the same fixture data — no network calls.
-- **Cost budget:** no effect — pure client-side simulation on a timer, zero LLM requests.
-- Respect `prefers-reduced-motion` at build time where cheap, but full still-frame a11y handling is feature 19 (out of scope here).
+- Store already models `error` for both `WorkflowStatus` and `Advisor['status']`, and `canTransitionWorkflow` already permits a whole-workflow `error` transition (from any non-idle/non-complete/non-error stage). This feature exercises the *per-advisor* error + retry path; the whole-workflow `error` status stays reachable via `advanceStage('error')` but the simulation does not force it (single-advisor error ≠ workflow error).
+- Reuses feature-07 store actions (`setAdvisorStatus`, `setAdvisorResult`) and the feature-09 timed-resolution pattern. Retry is seat-local: a `setTimeout` in `AdvisorSeat` drives `thinking → complete`, cleaned up on unmount. The gauge animates against **real** `thinking` status — no fake activity.
+- New store action `logAdvisorError(message, timestampLabel)` mirrors `logTimelineEvent` (flips a prior `now` head to `done`) but stamps an `error` row instead of a `now` row.
+- New `TimelineEvent` state `'error'` renders seal-red with a neon glow so the muted wax tone stays legible on the gunmetal background.
+- Alternate retry arguments live in `advisorRetryResults` (fixtures) — one "another angle" per advisor. Note: the per-advisor argument *text* is not yet rendered on the seat (that panel is a later feature), so the observable retry feedback is the gauge (thinking → flicker-on) and status label; the regenerated argument lands in store state.
+- Error styling tracks real state (per the overview's "no neon for its own sake" caution) — the seal bezel only appears on a real `error` status.
+- **Depends on:** features 07 (states/actions) and 09 (per-advisor animated resolution). Both done.
+- **Cost budget:** no effect — pure client-side simulation + retry on a timer, zero LLM requests.
+- Respect `prefers-reduced-motion` where cheap (reuse the existing gauge/timeline gates); full still-frame a11y is feature 19.
 
 ## Out of Scope
 
-- Real streamed tokens from a model (Phase 3, feature 14) — this is a *simulation* on a timer.
-- Error/retry paths (feature 10) and replay control (feature 11).
-- Reduced-motion still-frame handling (Phase 4 accessibility, feature 19) — build motion here, gate it for a11y later.
-- Agreement/conflict connector lines (later polish, not required for v1 sign-off).
+- Real API error handling, timeouts, rate limits (Phase 3 — this retries against the *simulation*).
+- Whole-workflow retry/restart beyond `reset` (single-advisor retry is the v1 feature).
+- Timeline replay (feature 11).
+- A per-advisor argument panel that would render the regenerated text (later feature).
+- Toast library wiring — errors stay in-canvas / in-timeline for v1.
 
 ## History
 

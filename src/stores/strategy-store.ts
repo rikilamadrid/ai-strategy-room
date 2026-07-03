@@ -47,6 +47,7 @@ export interface StrategyStoreState extends StrategyStoreSnapshot {
   setAdvisorResult: (id: Advisor["id"], patch: AdvisorResultPatch) => void;
   appendTimelineEvent: (event: TimelineEvent) => void;
   logTimelineEvent: (message: string, timestampLabel: string) => void;
+  logAdvisorError: (message: string, timestampLabel: string) => void;
   sealTimeline: () => void;
   setBrief: (brief?: DecisionBrief) => void;
   reset: () => void;
@@ -200,6 +201,20 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
           event.state === "now" ? { ...event, state: "done" as const } : event,
         ),
         { message, timestampLabel, state: "now" as const },
+      ],
+    }));
+  },
+  logAdvisorError: (message, timestampLabel) => {
+    // A faulted advisor stamps a permanent error row. Like a normal resolution
+    // it advances the head (any prior `now` flips to `done`), but the row reads
+    // as `error` rather than becoming the live `now` — the other advisors keep
+    // deliberating, so the workflow head moves on to the next one.
+    set((state) => ({
+      timeline: [
+        ...state.timeline.map((event) =>
+          event.state === "now" ? { ...event, state: "done" as const } : event,
+        ),
+        { message, timestampLabel, state: "error" as const },
       ],
     }));
   },

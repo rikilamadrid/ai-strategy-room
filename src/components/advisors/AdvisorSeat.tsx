@@ -1,9 +1,15 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
+import { advisorRetryResults } from "@/lib/fixtures";
 import { NEON_FLICKER_OPACITY, NEON_FLICKER_TIMES, tickEase } from "@/lib/motion";
+import { useStrategyStore } from "@/stores/strategy-store";
 import type { Advisor } from "@/types/strategy";
+
+// How long a re-run advisor spends ticking before its new argument settles.
+const RETRY_THINKING_MS = 1400;
 
 type SeatVisual = {
   /** Status label shown beneath the advisor name. */
@@ -46,12 +52,15 @@ const SEAT_VISUALS: Record<Advisor["status"], SeatVisual> = {
     needleAngle: 20,
   },
   error: {
-    label: "error",
+    // A dead tube: dim, cracked-looking seal-red bezel, needle slumped, and no
+    // neon flicker (that stays reserved for a completed argument).
+    label: "signal lost",
     seatClass:
-      "border-amber shadow-[0_0_14px_color-mix(in_srgb,var(--color-amber)_30%,transparent)]",
-    needleColor: "var(--color-amber)",
-    needleGlow: "0 0 6px var(--color-amber)",
-    needleAngle: 40,
+      "border-seal border-dashed shadow-[0_0_12px_color-mix(in_srgb,var(--color-seal)_35%,transparent)]",
+    needleColor: "var(--color-seal)",
+    needleGlow: "none",
+    needleAngle: -40,
+    dim: true,
   },
 };
 
@@ -61,9 +70,52 @@ const TICK_SWEEP = [-40, 40];
 
 export function AdvisorSeat({ advisor }: { advisor: Advisor }) {
   const reduceMotion = useReducedMotion();
+  const setAdvisorStatus = useStrategyStore((state) => state.setAdvisorStatus);
+  const setAdvisorResult = useStrategyStore((state) => state.setAdvisorResult);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const visual = SEAT_VISUALS[advisor.status];
   const isThinking = advisor.status === "thinking";
   const isComplete = advisor.status === "complete";
+  // "Try another angle" only makes sense once an advisor has settled — a
+  // resolved argument to reconsider, or a fault to recover from.
+  const canRetry = advisor.status === "complete" || advisor.status === "error";
+
+  useEffect(
+    () => () => {
+      if (retryTimer.current) {
+        clearTimeout(retryTimer.current);
+      }
+    },
+    [],
+  );
+
+  // Re-run this one advisor without touching the rest of the workflow: it
+  // re-enters `thinking` (needle ticks against real state) and settles back to
+  // `complete` with an alternate fixture argument. No new stage transitions,
+  // no moderator rerun — a timer, not a network call.
+  const handleRetry = () => {
+    if (retryTimer.current) {
+      clearTimeout(retryTimer.current);
+    }
+
+    setAdvisorStatus(advisor.id, "thinking");
+    const next = advisorRetryResults[advisor.id];
+
+    retryTimer.current = setTimeout(() => {
+      setAdvisorResult(
+        advisor.id,
+        next
+          ? {
+              argument: next.argument,
+              confidence: next.confidence,
+              risks: next.risks,
+              status: "complete",
+            }
+          : { status: "complete" },
+      );
+    }, RETRY_THINKING_MS);
+  };
 
   // Idle/complete/error: needle settles to its resting angle. Thinking: it
   // ticks back and forth in discrete steps until an argument lands. Reduced
@@ -120,13 +172,26 @@ export function AdvisorSeat({ advisor }: { advisor: Advisor }) {
           />
         </div>
       </div>
-      <div>
+      <div className="min-w-0">
         <div className="font-mechanical text-[13px] tracking-[0.03em] text-brass-light">
           {advisor.name}
         </div>
-        <div className="font-mechanical text-xs uppercase tracking-[0.08em] text-cyan">
+        <div
+          className={`font-mechanical text-xs uppercase tracking-[0.08em] ${
+            advisor.status === "error" ? "text-seal" : "text-cyan"
+          }`}
+        >
           {visual.label}
         </div>
+        {canRetry ? (
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="mt-1.5 rounded-sm border border-brass-dark bg-transparent px-2 py-0.5 font-mechanical text-[10px] uppercase tracking-[0.12em] text-brass transition-colors hover:border-brass hover:text-brass-light focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-brass"
+          >
+            ↻ Try another angle
+          </button>
+        ) : null}
       </div>
     </div>
   );
