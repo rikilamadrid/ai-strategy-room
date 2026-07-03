@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Strategy Table — Brass &amp; Neon mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Special+Elite&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0a0d;
+    --bg2:#17131a;
+    --brass:#c9a227;
+    --brass-dark:#6e5518;
+    --brass-light:#f0d27a;
+    --pink:#ff2fb0;
+    --pink-soft:#ff7fd0;
+    --cyan:#2fd6d6;
+    --amber:#ffb347;
+    --parchment:#ece0c4;
+    --ink:#2a2118;
+    --panel-border: 2px solid var(--brass-dark);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 50% -10%, #241c22 0%, var(--bg) 55%),
+      var(--bg);
+    color:var(--parchment);
+    font-family:'Cormorant Garamond', serif;
+    padding:28px 20px 60px;
+  }
+  .scanlines{
+    position:fixed; inset:0; pointer-events:none; z-index:50;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 2px, transparent 3px);
+    mix-blend-mode:overlay;
+  }
+  .vignette{
+    position:fixed; inset:0; pointer-events:none; z-index:49;
+    box-shadow: inset 0 0 220px 60px rgba(0,0,0,0.85);
+  }
+  .frame{
+    max-width:900px; margin:0 auto; position:relative; z-index:1;
+  }
+
+  /* header */
+  .headerbar{
+    display:flex; align-items:center; justify-content:space-between;
+    border:var(--panel-border); border-radius:6px;
+    padding:14px 22px;
+    background: linear-gradient(180deg, #1c1620, #100c12);
+    box-shadow: 0 0 0 1px rgba(201,162,39,0.15), 0 0 24px rgba(255,47,176,0.08);
+  }
+  .wordmark{
+    font-family:'Cinzel Decorative', serif;
+    font-weight:900;
+    font-size:26px;
+    letter-spacing:1px;
+    color:var(--brass-light);
+    text-shadow: 0 0 10px var(--pink), 0 0 2px var(--brass-light);
+    margin:0;
+  }
+  .wordmark small{
+    display:block; font-family:'Special Elite', monospace;
+    font-size:11px; letter-spacing:3px; color:var(--cyan);
+    text-transform:uppercase; text-shadow:0 0 6px rgba(47,214,214,0.6);
+    margin-top:4px;
+  }
+  .gauge-badge{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Special Elite', monospace; font-size:11px;
+    color:var(--brass-light); text-transform:uppercase; letter-spacing:1px;
+  }
+  .dial{
+    width:46px; height:46px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #3a2e12, #0e0b08 70%);
+    border:2px solid var(--brass);
+    position:relative;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.8), 0 0 8px rgba(255,47,176,0.35);
+  }
+  .dial::after{
+    content:""; position:absolute; left:50%; top:50%; width:2px; height:16px;
+    background:var(--pink); box-shadow:0 0 6px var(--pink);
+    transform-origin:bottom center; transform: translate(-50%,-100%) rotate(35deg);
+  }
+
+  /* table surface */
+  .table-surface{
+    margin-top:26px; border:var(--panel-border); border-radius:8px;
+    padding:34px 20px; position:relative;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(201,162,39,0.07), transparent 60%),
+      repeating-radial-gradient(circle at 50% 50%, rgba(201,162,39,0.035) 0 2px, transparent 2px 26px),
+      #120e14;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.7);
+  }
+  .seats{
+    display:grid; grid-template-columns:1fr 1fr; gap:18px 60px;
+    max-width:560px; margin:0 auto 26px;
+  }
+  .seat{
+    display:flex; align-items:center; gap:12px;
+    border:1px solid var(--brass-dark); border-radius:6px;
+    padding:10px 12px;
+    background:linear-gradient(180deg, #1b1520, #120e14);
+  }
+  .seat.active{
+    border-color:var(--pink);
+    box-shadow:0 0 14px rgba(255,47,176,0.35);
+  }
+  .seat.thinking{
+    border-color:var(--amber);
+    box-shadow:0 0 14px rgba(255,179,71,0.3);
+  }
+  .pocket-gauge{
+    width:44px; height:44px; border-radius:50%; flex:none;
+    background: radial-gradient(circle at 35% 30%, #4a3a16, #0e0b08 70%);
+    border:2px solid var(--brass);
+    position:relative;
+  }
+  .seat.active .pocket-gauge::after{
+    content:""; position:absolute; left:50%; top:50%; width:2px; height:14px;
+    background:var(--pink); box-shadow:0 0 6px var(--pink);
+    transform-origin:bottom center; transform: translate(-50%,-100%) rotate(20deg);
+  }
+  .seat.thinking .pocket-gauge::after{
+    content:""; position:absolute; left:50%; top:50%; width:2px; height:14px;
+    background:var(--amber); box-shadow:0 0 6px var(--amber);
+    transform-origin:bottom center; transform: translate(-50%,-100%) rotate(-40deg);
+    animation:tick 1.4s steps(6) infinite;
+  }
+  @keyframes tick{
+    0%{transform: translate(-50%,-100%) rotate(-40deg);}
+    100%{transform: translate(-50%,-100%) rotate(40deg);}
+  }
+  .seat-name{ font-family:'Special Elite', monospace; font-size:13px; color:var(--brass-light); letter-spacing:0.5px;}
+  .seat-role{ font-size:12px; color:var(--cyan); font-family:'Special Elite', monospace; text-transform:uppercase; letter-spacing:1px;}
+
+  .question-plate{
+    max-width:420px; margin:0 auto; text-align:center;
+    border:2px solid var(--brass); border-radius:8px;
+    padding:18px 24px; background:linear-gradient(180deg,#241a1d,#150f12);
+    box-shadow:0 0 20px rgba(255,47,176,0.15), inset 0 0 12px rgba(0,0,0,0.6);
+  }
+  .question-plate .eyebrow{
+    font-family:'Special Elite', monospace; font-size:11px; letter-spacing:3px;
+    color:var(--pink-soft); text-transform:uppercase; margin-bottom:6px;
+  }
+  .question-plate p{ font-size:19px; font-style:italic; margin:0; color:var(--parchment);}
+
+  /* lower split */
+  .split{
+    display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:20px;
+  }
+  .panel{
+    border:var(--panel-border); border-radius:6px; padding:16px 18px;
+  }
+  .panel h3{
+    font-family:'Cinzel Decorative', serif; font-size:14px; margin:0 0 12px;
+    color:var(--brass-light); letter-spacing:0.5px; text-transform:uppercase;
+  }
+  .timeline{
+    background:#0a0c0a; font-family:'Special Elite', monospace; font-size:12px;
+    color:var(--cyan); line-height:1.9;
+  }
+  .timeline .row{ opacity:0.9; }
+  .timeline .row.done{ color:#5fe6a0; }
+  .timeline .row.now{ color:var(--amber); }
+  .brief{
+    background:linear-gradient(180deg,#e9dfc4,#ded194);
+    color:var(--ink);
+  }
+  .brief h3{ color:#4a3a10; }
+  .brief .rec{
+    font-family:'Cormorant Garamond', serif; font-style:italic; font-size:16px;
+    border-left:3px solid #a2321f; padding-left:10px; margin:0 0 12px;
+  }
+  .brief ul{ margin:0 0 10px; padding-left:18px; font-size:13.5px;}
+  .brief .conf{
+    font-family:'Special Elite', monospace; font-size:11px; letter-spacing:1px;
+    text-transform:uppercase; color:#6e5518;
+  }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<div class="frame">
+
+  <div class="headerbar">
+    <div class="wordmark">AI Strategy Table<small>a cinematic decision chamber</small></div>
+    <div class="gauge-badge"><div class="dial"></div>Session cost &nbsp;$0.01</div>
+  </div>
+
+  <div class="table-surface">
+    <div class="seats">
+      <div class="seat thinking">
+        <div class="pocket-gauge"></div>
+        <div><div class="seat-name">The skeptic</div><div class="seat-role">thinking&hellip;</div></div>
+      </div>
+      <div class="seat active">
+        <div class="pocket-gauge"></div>
+        <div><div class="seat-name">The strategist</div><div class="seat-role">argument ready</div></div>
+      </div>
+      <div class="seat">
+        <div class="pocket-gauge"></div>
+        <div><div class="seat-name">Human advocate</div><div class="seat-role">waiting</div></div>
+      </div>
+      <div class="seat">
+        <div class="pocket-gauge"></div>
+        <div><div class="seat-name">The pragmatist</div><div class="seat-role">waiting</div></div>
+      </div>
+    </div>
+
+    <div class="question-plate">
+      <div class="eyebrow">Your question</div>
+      <p>Should I lease or buy a car after moving to Madrid?</p>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="panel timeline">
+      <h3 style="color:var(--brass-light)">Live discussion</h3>
+      <div class="row done">[00:02] Constraints parsed — budget, 3yr horizon</div>
+      <div class="row done">[00:05] Strategist filed argument</div>
+      <div class="row now">[00:07] Skeptic drafting counterpoint&hellip;</div>
+      <div class="row">[ --:-- ] Pragmatist pending</div>
+      <div class="row">[ --:-- ] Moderator pending</div>
+    </div>
+
+    <div class="panel brief">
+      <h3>Decision brief</h3>
+      <p class="rec">Recommendation: lease for the first 18 months, revisit once residency is confirmed.</p>
+      <div class="conf">Confidence — moderate</div>
+      <ul>
+        <li>Agreement: residency status is the swing variable</li>
+        <li>Risk: early termination penalties vary by dealer</li>
+        <li>Next action: request 3 lease quotes this week</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
