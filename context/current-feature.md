@@ -2,9 +2,9 @@
 
 ## Status
 
-In Progress — branch `feature/streaming-simulation` created, Framer Motion `12.42.2` installed (2026-07-03).
+Complete — merged to `main` 2026-07-03 (branch `feature/streaming-simulation` pruned). Detailed entry in `context/HISTORY.md`; user-facing summary under `## [Unreleased]` in `CHANGELOG.md`. Next up: feature 10 (error/retry paths) or feature 11 (replay control), both deferred out of this feature.
 
-Interpretation note: the "advisor arguments reveal teletype/punch-card style" goal is realized on the **timeline rows** (each advisor filing its argument types in), per overview lines 90 & 117 — "the timeline can replay the order of the workflow, teletype-style." The dedicated per-advisor argument panel (overview line 89) is a later feature and is out of scope here.
+Interpretation note: the "advisor arguments reveal teletype/punch-card style" goal was realized on the **timeline rows** (each advisor filing its argument types in), per overview lines 90 & 117 — "the timeline can replay the order of the workflow, teletype-style." The dedicated per-advisor argument panel (overview line 89) is a later feature and was out of scope here.
 
 ## Goals
 
