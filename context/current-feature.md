@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress — implemented, pending review/merge
+Complete — merged to `main`.
 
 ## Goals
 
@@ -42,3 +42,4 @@ In Progress — implemented, pending review/merge
 - **2026-07-03** — Completed feature 01 theme foundation: removed Create Next App boilerplate, added Brass & Neon Tailwind tokens, wired the three project typefaces, and applied the base room background with scanlines and vignette.
 - **2026-07-03** — Completed feature 02 core types and fixture data: added strict TypeScript strategy models in `src/types/strategy.ts`, added the canonical Madrid demo session in `src/lib/fixtures.ts`, and verified with `npm run build` plus `npm run lint`.
 - **2026-07-02** — Completed feature 03 app shell and header: added `StrategyTable` layout shell and `CostBadge` brass dial, rendered at `/` with static placeholder regions. Verified with `npm run build` and `npm run lint`.
+- **2026-07-02** — Completed feature 04 advisor seats & table surface: added `AdvisorSeat` (per-status brass pocket-gauge), `QuestionPlate`, and the 2×2 seats grid in `StrategyTable`. Also wired the PWA icon set/favicons/web manifest into layout metadata and served the brand `favicon.ico` from `public/` root (removed the default `src/app/favicon.ico` — the app-dir convention broke the build on the non-RGBA `.ico` and overrode the public file). Verified with `npm run build`. Merged to `main`.
