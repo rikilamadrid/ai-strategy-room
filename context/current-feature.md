@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress — implemented on branch `feature/question-input`, awaiting Ricardo browser review + commit approval.
+Complete — merged to `main` on 2026-07-03. Branch pruned.
 
 ## Goals
 
@@ -49,3 +49,4 @@ In Progress — implemented on branch `feature/question-input`, awaiting Ricardo
 - **2026-07-03** — Completed feature 05 live timeline & decision brief: added fixture-driven `WorkflowTimeline` and `DecisionBrief` panels, wired them into the lower split region, and added tokenized success/seal colors. Verified with `npm run lint`, `npm run build`, served markup smoke check, and Ricardo browser review. Merged to `main`.
 - **2026-07-03** — Completed feature 06 Vercel preview deployment & CI/CD docs: added GitHub Actions install/lint/build CI, replaced the stock README with project-specific local/deployment runbook, and documented the Vercel GitHub integration flow with URL placeholders pending account-side project setup. Verified with `npm run lint` and `npm run build`. Merged to `main`.
 - **2026-07-03** — Completed feature 07 strategy store & workflow state machine: installed `zustand@5.0.14`, added `src/stores/strategy-store.ts` with a seeded Zustand session store plus exported pure transition helpers enforcing the `idle -> planning -> advising -> mapping -> moderating -> complete` (+`error`) workflow, added explicit `status` to `StrategySession`/the demo fixture, and refactored `StrategyTable` and `CostBadge` to read from the store while keeping the Phase 1 screen visually unchanged. Verified with `npm run lint` and `npm run build`. Merged to `main`.
+- **2026-07-03** — Completed feature 08 question input & session start: made `QuestionPlate` the first `'use client'` interactive surface — idle renders a validated textarea + brass "Convene the table" submit, running renders the locked-in question. Submit wires `setQuestion` + `startSession` (`idle → planning`, advisors reset to `waiting`, prior results cleared). Validation is trimmed-non-empty with a 280-char cap and an instrument-style hint. Changed the store to initialize to an empty `IDLE_SESSION` so first load shows the input prompt instead of fixture content; `StrategyTable` drops the unused `question` selector. Verified with `npm run lint`, `npm run build`, and a served-HTML idle-state smoke check. Merged to `main`.
