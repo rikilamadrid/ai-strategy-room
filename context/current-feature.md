@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete - Ready to Merge
+Complete — merged to `main`.
 
 ## Goals
 
@@ -27,6 +27,7 @@ Complete - Ready to Merge
 - Browser visual review approved by Ricardo.
 - Tokens only — use Brass & Neon vars from feature 01; no one-off palette or font stacks in components.
 - This feature is static markup/display only. No AI calls, state machine, persistence, real observability math, or animation.
+- Merged to `main` with `merge: timeline and decision brief panels`.
 
 ## Out of Scope
 
@@ -44,3 +45,4 @@ Complete - Ready to Merge
 - **2026-07-03** — Completed feature 02 core types and fixture data: added strict TypeScript strategy models in `src/types/strategy.ts`, added the canonical Madrid demo session in `src/lib/fixtures.ts`, and verified with `npm run build` plus `npm run lint`.
 - **2026-07-02** — Completed feature 03 app shell and header: added `StrategyTable` layout shell and `CostBadge` brass dial, rendered at `/` with static placeholder regions. Verified with `npm run build` and `npm run lint`.
 - **2026-07-02** — Completed feature 04 advisor seats & table surface: added `AdvisorSeat` (per-status brass pocket-gauge), `QuestionPlate`, and the 2×2 seats grid in `StrategyTable`. Also wired the PWA icon set/favicons/web manifest into layout metadata and served the brand `favicon.ico` from `public/` root (removed the default `src/app/favicon.ico` — the app-dir convention broke the build on the non-RGBA `.ico` and overrode the public file). Verified with `npm run build`. Merged to `main`.
+- **2026-07-03** — Completed feature 05 live timeline & decision brief: added fixture-driven `WorkflowTimeline` and `DecisionBrief` panels, wired them into the lower split region, and added tokenized success/seal colors. Verified with `npm run lint`, `npm run build`, served markup smoke check, and Ricardo browser review. Merged to `main`.
