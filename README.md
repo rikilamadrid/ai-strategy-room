@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Strategy Table
 
-## Getting Started
+A cinematic multi-agent decision room built with Next.js App Router, TypeScript, and Tailwind CSS. The current build is the Phase 1 static prototype: Brass & Neon theme, advisor gauges, question plate, live timeline, and decision brief rendered from fixture data.
 
-First, run the development server:
+## Local Development
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3004](http://localhost:3004).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Useful checks:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run build
+```
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+Deployment uses Vercel's GitHub integration, with GitHub Actions providing the independent CI signal.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Environment | Source | URL |
+| --- | --- | --- |
+| Production | `main` branch on Vercel | Pending Vercel project setup |
+| Preview | Pull requests / feature branch pushes on Vercel | Pending Vercel project setup |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Vercel Setup
 
-## Deploy on Vercel
+1. Import this GitHub repository into Vercel as a Next.js project.
+2. Use the Vercel free tier and keep the framework preset as Next.js.
+3. Set the production branch to `main`.
+4. Set the Node.js runtime to Node 22 to match CI.
+5. Leave environment variables empty for now. AI provider keys are intentionally out of scope until feature 12.
+6. After Vercel creates the project, update the URL table above with the production URL and a representative preview URL.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### GitHub Actions CI
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`.github/workflows/ci.yml` runs on pull requests plus pushes to `main`, `feature/**`, and `fix/**`.
+
+The workflow:
+
+- checks out the repo with `actions/checkout@v7`
+- sets up Node 22 with `actions/setup-node@v6`
+- installs dependencies with `npm ci`
+- runs `npm run lint`
+- runs `npm run build`
+
+### Expected Flow
+
+1. Start each feature from `main` on a `feature/*` or `fix/*` branch.
+2. Push the branch and confirm GitHub Actions passes.
+3. Use Vercel's preview deployment for browser review.
+4. Merge to `main` only after CI/build and visual review pass.
+5. Vercel automatically publishes the updated production deployment from `main`.
+
+## Constraints
+
+- No database, auth, accounts, or server-side session persistence.
+- No AI provider environment variables until the AI integration phase.
+- Completed AI sessions must remain within the 2-3 LLM request budget once real AI calls are introduced.
+- Raw model output must never be rendered directly; structured validated output only.
