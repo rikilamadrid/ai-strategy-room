@@ -9,7 +9,6 @@ import { useStrategyStore } from "@/stores/strategy-store";
 
 export function StrategyTable() {
   const status = useStrategyStore((state) => state.status);
-  const question = useStrategyStore((state) => state.question);
   const advisors = useStrategyStore((state) => state.advisors);
   const timeline = useStrategyStore((state) => state.timeline);
   const decisionBrief = useStrategyStore((state) => state.decisionBrief);
@@ -34,7 +33,7 @@ export function StrategyTable() {
             <AdvisorSeat key={advisor.id} advisor={advisor} />
           ))}
         </div>
-        <QuestionPlate question={question} />
+        <QuestionPlate />
       </section>
 
       <div className="mt-7 grid gap-7 md:grid-cols-2">
