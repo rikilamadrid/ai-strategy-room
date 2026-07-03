@@ -34,6 +34,7 @@ export interface TimelineEvent {
 }
 
 export interface StrategySession {
+  status: WorkflowStatus;
   question: string;
   advisors: Advisor[];
   timeline: TimelineEvent[];

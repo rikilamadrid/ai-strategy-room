@@ -1,42 +1,37 @@
-# Vercel Preview Deployment & CI/CD
+# Strategy Store & Workflow State Machine
 
 ## Status
 
-Complete — merged to `main`; pending account-side Vercel project connection/live URL.
+In Progress — implementation complete on `feature/strategy-store`; pending review/commit.
 
 ## Goals
 
-- Create a lightweight GitHub Actions CI workflow that runs install, lint, and `npm run build` on pull requests and pushes.
-- Document the Vercel setup path in `README.md`, including the production/preview deployment flow and any required secrets or dashboard settings.
-- Add placeholder slots for the eventual Vercel preview/live URLs in `README.md` once the project is connected.
-- Keep the deployment path stateless: Vercel free tier, no database, no auth, no server-side session persistence, and no AI provider variables yet.
-- Verify the Phase 1 static prototype still builds cleanly before the feature is considered complete.
+- Add Zustand and create `src/stores/strategy-store.ts` holding the full session in client state: `status`, `question`, `advisors`, `timeline`, and `decisionBrief`.
+- Model the workflow as an explicit state machine over `WorkflowStatus` (`idle -> planning -> advising -> mapping -> moderating -> complete`, plus `error`) and reject invalid transitions.
+- Expose granular actions for question updates, stage changes, advisor updates, timeline appends, brief updates, and reset.
+- Refactor the Phase 1 components to read from the store instead of importing fixtures directly, while seeding the store from the existing demo fixture so the static screen stays visually unchanged.
+- Keep the session in memory only with no persistence, and finish with a passing `npm run build`.
 
 ## Notes
 
-- Active feature spec: `context/features/06-vercel-preview-ci.md`.
-- Branch: `feature/vercel-preview-ci` (merged to `main` with `merge: vercel preview ci docs`).
-- This feature happens immediately after feature 05 because the static visual prototype is now worth deploying.
-- Official docs checked on 2026-07-03:
-  - `actions/checkout` latest release is `v7.0.0`; use `actions/checkout@v7`.
-  - `actions/setup-node` latest release is `v6.4.0`; use `actions/setup-node@v6`.
-  - Vercel's GitHub integration creates automatic deployments on branch pushes, production updates from the production branch, and PR preview URLs.
-- Prefer Vercel's built-in GitHub integration for deployments; the GitHub Actions workflow should be CI/build signal only unless a later task explicitly requires custom Vercel CLI deploys.
-- CI should use `npm ci`, `npm run lint`, and `npm run build`.
-- Added `.github/workflows/ci.yml` with install/lint/build checks for pull requests plus pushes to `main`, `feature/**`, and `fix/**`.
-- Replaced the stock README with project-specific local development, CI, and Vercel setup documentation.
-- Vercel project creation and URL recording require the repository to be imported into the user's Vercel account.
+- Active feature spec: `context/features/07-strategy-store.md`.
+- Branch: `feature/strategy-store`.
+- This is the first Phase 2 workflow-state feature and becomes the backbone for question input, streaming simulation, retry behavior, and AI orchestration.
+- Use Zustand for v1 simplicity, but keep state transitions explicit and unit-testable in pure helper functions rather than burying workflow rules in component code.
+- Seed the store from `demoStrategySession` on first load so the current Phase 1 table remains visually unchanged while components migrate to store selectors.
+- Keep the app stateless: no localStorage, database, auth, or server session storage.
+- Official package check on 2026-07-03: `zustand` current npm version is `5.0.14`; installed that exact version.
+- Added `src/stores/strategy-store.ts` with exported pure workflow transition helpers plus a seeded Zustand store.
+- Refactored `StrategyTable` into the client boundary that reads `status`, `question`, `advisors`, `timeline`, and `decisionBrief` from the store.
+- Updated `StrategySession` and the demo fixture to carry explicit workflow `status`, and wired `CostBadge` to read the workflow stage from store-backed props while keeping the existing static visual.
 - Verification: `npm run lint` passes; `npm run build` passes.
-- Merged to `main` with `merge: vercel preview ci docs`.
-- AI provider environment variables are not required yet; those arrive with feature 12 and are production-checked again in feature 22.
-- No UI changes are planned for this feature except minimal fixes if the deployed/static build exposes a rendering problem.
 
 ## Out of Scope
 
-- Real AI provider keys, model configuration, or API-route production behavior (features 12-16 and final readiness in feature 22).
-- Custom domain setup, launch checklist, or production monitoring polish (feature 22).
-- Adding a database, durable cache, auth, or user accounts.
-- Changing the app UI beyond any minimal fixes needed for the deployed Phase 1 build to render correctly.
+- Timers, simulated progression, or streaming playback behavior (feature 09).
+- Real planner/advisor/moderator API calls (features 12-15).
+- Persistence of any kind, including localStorage.
+- UI expansion beyond the minimal refactor needed to source Phase 1 components from the store.
 
 ## History
 

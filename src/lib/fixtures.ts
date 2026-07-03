@@ -1,6 +1,7 @@
 import type { StrategySession } from "@/types/strategy";
 
 export const demoStrategySession: StrategySession = {
+  status: "advising",
   question: "Should I lease or buy a car after moving to Madrid?",
   advisors: [
     {
