@@ -1,38 +1,39 @@
-# Advisor Seats & Table Surface
+# Live Timeline & Decision Brief
 
 ## Status
 
-Complete — merged to `main`.
+Complete - Ready to Merge
 
 ## Goals
 
-- Build the table surface: brass-framed panel with the faint concentric-etching radial background and inset shadow, filling the table region of the shell.
-- Create `src/components/advisors/AdvisorSeat.tsx`: a single seat = brass pocket-gauge (glass face + needle) plus the advisor name (Special Elite) and role/status label (cyan).
-- Support three static visual states driven by the advisor's `status` prop: `waiting` (idle needle), `thinking` (amber bezel), `complete`/active (pink bezel glow). Needle angle differs per state.
-- Lay the four seats out in a 2×2 grid around the center, mapped from the fixture advisor array (feature 02).
-- Create `src/components/table/QuestionPlate.tsx`: centered brass plate with the `YOUR QUESTION` eyebrow and the italic question text from the fixture.
-- Rendered result visually matches the reference screenshot's table region.
+- Create `src/components/workflow/WorkflowTimeline.tsx`: the left panel of the lower split — dark terminal-style list of timeline rows (Special Elite, cyan) with per-row states: `done` (green), `now` (amber), `pending` (dim). Renders from fixture `TimelineEvent[]`.
+- Create `src/components/brief/DecisionBrief.tsx`: the right panel — aged-parchment card with the recommendation (editorial italic, red left-rule), a `CONFIDENCE — <level>` line, and a bulleted list of agreement / risk / next-action items. Renders from the fixture `DecisionBrief`.
+- Wire both panels into the lower split region of `StrategyTable` as a two-column grid.
+- Full static prototype now matches the reference screenshot end-to-end (header, seats, question, timeline, brief).
+- `npm run build` passes; layout holds on desktop widths.
 
 ## Notes
 
-- Active feature spec: `context/features/04-advisor-seats-and-table.md`.
-- Branch: `feature/advisor-seats-and-table` (off `main`, clean tree; feature 03 merged).
-- Implementation:
-  - `AdvisorSeat.tsx` — per-status visual config (`waiting`/`thinking`/`complete`/`error`) driving seat border/glow, needle color, needle glow, and a fixed needle angle. Needle rendered as a real element (not the mockup's pseudo-element) so angle/color are data-driven. **Static — no `tick` animation** (deferred to feature 09).
-  - `QuestionPlate.tsx` — brass plate, pink-soft `YOUR QUESTION` eyebrow, italic question from fixture.
-  - `StrategyTable.tsx` — replaced the table-surface placeholder with a `<section>` holding the 2×2 seats grid (mapped from `demoStrategySession.advisors`) + the question plate. Lower split panels remain placeholders (feature 05).
-- Status → role label mapping: `waiting → "waiting"`, `thinking → "thinking…"`, `complete → "argument ready"`, `error → "error"`.
-- Waiting seats show a subtle dimmed brass idle needle (spec calls for an idle needle; kept faint to match the mockup's near-empty waiting bezels).
-- Tokens only — Brass & Neon vars from feature 01; no one-off hex/font values.
-- Verification: `npm run build` passes (no type errors), `npm run lint` passes. Browser screenshot at `http://localhost:3004/` confirmed the table region matches the reference (Skeptic amber/thinking, Strategist pink/argument-ready, other two waiting).
-- This feature is static markup/display only. No AI calls, state machine, persistence, or real observability math.
+- Active feature spec: `context/features/05-timeline-and-brief.md`.
+- Branch: `feature/timeline-and-brief` (started from clean `main`; feature 04 already merged).
+- Timeline CSS + rows should follow mockup `.split`, `.panel`, and `.timeline` styles in `context/ai-strategy-table-mockup.html`.
+- Brief CSS + content should follow mockup `.brief`, `.rec`, and `.conf` styles in `context/ai-strategy-table-mockup.html`.
+- Reference screenshot: `context/screenshots/Screenshot 2026-07-02 at 5.20.09 PM.png` (bottom two panels).
+- Confidence is rendered as a qualitative label mapped from the numeric `confidence` field.
+- Implementation added `WorkflowTimeline` and `DecisionBrief`, then replaced the lower split placeholders in `StrategyTable` with fixture-driven panels.
+- Added `success` and `seal` color tokens from the mockup so state color and the brief rule stay token-driven.
+- Verification: `npm run lint` passes; `npm run build` passes.
+- Served markup smoke check passed against the existing local dev server at `http://localhost:3004/`.
+- Browser visual review approved by Ricardo.
+- Tokens only — use Brass & Neon vars from feature 01; no one-off palette or font stacks in components.
+- This feature is static markup/display only. No AI calls, state machine, persistence, real observability math, or animation.
 
 ## Out of Scope
 
-- Ticking-needle animation, neon flicker-on, streaming state changes (feature 09).
-- Connecting lines between advisors (agreement brass lines / conflict neon cracks).
-- Click-to-open focused advisor file-card panel.
-- Timeline and brief (feature 05).
+- Wax-seal stamp-in reveal animation for the brief (Phase 2 streaming, feature 09).
+- Teletype reveal / replay of the timeline (Phase 2, features 09 and 11).
+- Real synthesized brief content from a model (Phase 3, feature 15).
+- Copy/share/export of the brief (v2, not in v1).
 
 ## History
 

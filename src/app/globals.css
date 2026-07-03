@@ -10,6 +10,8 @@
   --pink-soft: #ff7fd0;
   --cyan: #2fd6d6;
   --amber: #ffb347;
+  --success: #5fe6a0;
+  --seal: #a2321f;
   --parchment: #ece0c4;
   --ink: #2a2118;
 }
@@ -24,6 +26,8 @@
   --color-pink-soft: var(--pink-soft);
   --color-cyan: var(--cyan);
   --color-amber: var(--amber);
+  --color-success: var(--success);
+  --color-seal: var(--seal);
   --color-parchment: var(--parchment);
   --color-ink: var(--ink);
   --font-display: var(--font-display);
