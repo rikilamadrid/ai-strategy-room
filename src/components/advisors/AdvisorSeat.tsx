@@ -70,6 +70,7 @@ const TICK_SWEEP = [-40, 40];
 
 export function AdvisorSeat({ advisor }: { advisor: Advisor }) {
   const reduceMotion = useReducedMotion();
+  const isReplaying = useStrategyStore((state) => state.isReplaying);
   const setAdvisorStatus = useStrategyStore((state) => state.setAdvisorStatus);
   const setAdvisorResult = useStrategyStore((state) => state.setAdvisorResult);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,7 +80,8 @@ export function AdvisorSeat({ advisor }: { advisor: Advisor }) {
   const isComplete = advisor.status === "complete";
   // "Try another angle" only makes sense once an advisor has settled — a
   // resolved argument to reconsider, or a fault to recover from.
-  const canRetry = advisor.status === "complete" || advisor.status === "error";
+  const showRetry = advisor.status === "complete" || advisor.status === "error";
+  const canRetry = showRetry && !isReplaying;
 
   useEffect(
     () => () => {
@@ -95,6 +97,10 @@ export function AdvisorSeat({ advisor }: { advisor: Advisor }) {
   // `complete` with an alternate fixture argument. No new stage transitions,
   // no moderator rerun — a timer, not a network call.
   const handleRetry = () => {
+    if (!canRetry) {
+      return;
+    }
+
     if (retryTimer.current) {
       clearTimeout(retryTimer.current);
     }
@@ -183,11 +189,12 @@ export function AdvisorSeat({ advisor }: { advisor: Advisor }) {
         >
           {visual.label}
         </div>
-        {canRetry ? (
+        {showRetry ? (
           <button
             type="button"
             onClick={handleRetry}
-            className="mt-1.5 rounded-sm border border-brass-dark bg-transparent px-2 py-0.5 font-mechanical text-[10px] uppercase tracking-[0.12em] text-brass transition-colors hover:border-brass hover:text-brass-light focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-brass"
+            disabled={!canRetry}
+            className="mt-1.5 rounded-sm border border-brass-dark bg-transparent px-2 py-0.5 font-mechanical text-[10px] uppercase tracking-[0.12em] text-brass transition-colors hover:border-brass hover:text-brass-light focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-brass disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-brass-dark disabled:hover:text-brass"
           >
             ↻ Try another angle
           </button>

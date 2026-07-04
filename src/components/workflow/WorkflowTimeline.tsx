@@ -8,6 +8,12 @@ import type { TimelineEvent } from "@/types/strategy";
 
 interface WorkflowTimelineProps {
   events: TimelineEvent[];
+  replayLog: TimelineEvent[];
+  canReplay: boolean;
+  isReplaying: boolean;
+  replayRunId: number;
+  onReplay: () => void;
+  onReplayComplete: () => void;
 }
 
 const stateClassName: Record<TimelineEvent["state"], string> = {
@@ -20,6 +26,8 @@ const stateClassName: Record<TimelineEvent["state"], string> = {
 };
 
 const MS_PER_CHAR = 18;
+const REPLAY_ROW_FLOOR_MS = 360;
+const REPLAY_ROW_SETTLE_MS = 220;
 
 /**
  * Reveals a line of timeline text teletype-style — one character at a time with
@@ -28,15 +36,13 @@ const MS_PER_CHAR = 18;
  */
 function Teletype({ text, active }: { text: string; active: boolean }) {
   const reduceMotion = useReducedMotion();
-  const [count, setCount] = useState(reduceMotion ? text.length : 0);
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
     if (reduceMotion) {
-      setCount(text.length);
       return;
     }
 
-    setCount(0);
     let current = 0;
     const interval = setInterval(() => {
       current += 1;
@@ -48,6 +54,10 @@ function Teletype({ text, active }: { text: string; active: boolean }) {
 
     return () => clearInterval(interval);
   }, [text, reduceMotion]);
+
+  if (reduceMotion) {
+    return <span>{text}</span>;
+  }
 
   const typing = count < text.length;
 
@@ -63,16 +73,116 @@ function Teletype({ text, active }: { text: string; active: boolean }) {
   );
 }
 
-export function WorkflowTimeline({ events }: WorkflowTimelineProps) {
+function getReplayRowDelay(message: string): number {
+  return Math.max(REPLAY_ROW_FLOOR_MS, message.length * MS_PER_CHAR + 180);
+}
+
+function cloneEvents(events: TimelineEvent[]): TimelineEvent[] {
+  return events.map((event) => ({ ...event }));
+}
+
+export function WorkflowTimeline({
+  events,
+  replayLog,
+  canReplay,
+  isReplaying,
+  replayRunId,
+  onReplay,
+  onReplayComplete,
+}: WorkflowTimelineProps) {
   const reduceMotion = useReducedMotion();
+  const [replayState, setReplayState] = useState<{
+    runId: number;
+    events: TimelineEvent[];
+  }>({ runId: 0, events: [] });
+
+  useEffect(() => {
+    if (!isReplaying) {
+      return;
+    }
+
+    if (reduceMotion) {
+      const finishTimer = setTimeout(() => {
+        onReplayComplete();
+      }, 0);
+
+      return () => clearTimeout(finishTimer);
+    }
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const replayRows = cloneEvents(replayLog);
+    const settledRows = cloneEvents(events);
+    let elapsed = 180;
+
+    replayRows.forEach((event) => {
+      const replayRowState = event.state === "error" ? "error" : "now";
+
+      timers.push(
+        setTimeout(() => {
+          setReplayState((current) => ({
+            runId: replayRunId,
+            events: [
+              ...current.events.map((item) =>
+                item.state === "now"
+                  ? { ...item, state: "done" as const }
+                  : item,
+              ),
+              { ...event, state: replayRowState },
+            ],
+          }));
+        }, elapsed),
+      );
+
+      elapsed += getReplayRowDelay(event.message);
+    });
+
+    timers.push(
+      setTimeout(() => {
+        setReplayState({
+          runId: replayRunId,
+          events: settledRows,
+        });
+        onReplayComplete();
+      }, elapsed + REPLAY_ROW_SETTLE_MS),
+    );
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  }, [
+    events,
+    isReplaying,
+    onReplayComplete,
+    reduceMotion,
+    replayLog,
+    replayRunId,
+  ]);
+
+  const displayEvents = isReplaying
+    ? reduceMotion
+      ? events
+      : replayState.runId === replayRunId
+        ? replayState.events
+        : []
+    : events;
 
   return (
     <section className="min-h-[260px] rounded-md border-2 border-brass-dark bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-bg)_92%,transparent),color-mix(in_srgb,var(--color-bg2)_45%,transparent))] px-[18px] py-4 font-mechanical text-xs leading-[1.9] text-cyan shadow-[inset_0_0_42px_rgb(0_0_0_/_60%)]">
-      <h2 className="mb-4 mt-0 font-display text-sm font-black uppercase tracking-[0.04em] text-brass-light">
-        Live discussion
-      </h2>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h2 className="m-0 font-display text-sm font-black uppercase tracking-[0.04em] text-brass-light">
+          Live discussion
+        </h2>
+        <button
+          type="button"
+          onClick={onReplay}
+          disabled={!canReplay || isReplaying}
+          className="rounded-sm border border-brass-dark px-2 py-1 font-mechanical text-[10px] uppercase tracking-[0.14em] text-brass transition-colors enabled:hover:border-brass enabled:hover:text-brass-light disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          {isReplaying ? "Replaying…" : "Replay"}
+        </button>
+      </div>
       <ol className="m-0 list-none space-y-1 p-0">
-        {events.map((event) => (
+        {displayEvents.map((event) => (
           <motion.li
             key={`${event.timestampLabel}-${event.message}`}
             className={`origin-top ${stateClassName[event.state]}`}

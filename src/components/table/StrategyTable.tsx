@@ -12,7 +12,13 @@ export function StrategyTable() {
   const status = useStrategyStore((state) => state.status);
   const advisors = useStrategyStore((state) => state.advisors);
   const timeline = useStrategyStore((state) => state.timeline);
+  const replayLog = useStrategyStore((state) => state.replayLog);
+  const replayRunId = useStrategyStore((state) => state.replayRunId);
+  const isReplaying = useStrategyStore((state) => state.isReplaying);
+  const briefAnimationKey = useStrategyStore((state) => state.briefAnimationKey);
   const decisionBrief = useStrategyStore((state) => state.decisionBrief);
+  const startReplay = useStrategyStore((state) => state.startReplay);
+  const finishReplay = useStrategyStore((state) => state.finishReplay);
 
   // Drives the timed workflow progression once a session starts.
   useStrategySimulation();
@@ -41,9 +47,20 @@ export function StrategyTable() {
       </section>
 
       <div className="mt-7 grid gap-7 md:grid-cols-2">
-        <WorkflowTimeline events={timeline} />
+        <WorkflowTimeline
+          events={timeline}
+          replayLog={replayLog}
+          canReplay={status === "complete" && replayLog.length > 0}
+          isReplaying={isReplaying}
+          replayRunId={replayRunId}
+          onReplay={startReplay}
+          onReplayComplete={finishReplay}
+        />
         {decisionBrief ? (
-          <DecisionBrief brief={decisionBrief} />
+          <DecisionBrief
+            key={briefAnimationKey}
+            brief={decisionBrief}
+          />
         ) : null}
       </div>
     </main>
