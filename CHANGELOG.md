@@ -9,6 +9,10 @@ MINOR version and fixes bump the PATCH version.
 
 ## [Unreleased]
 
+### Added
+
+- AI client interface and structured-output schemas — the foundation of Phase 3. A small, provider-swappable `AIClient` seam (`src/lib/ai/client.ts`) wraps the Vercel AI SDK with a low-cost Anthropic model (`claude-haiku-4-5`, overridable via `AI_MODEL`), so no provider specifics leak into components or the store. Zod schemas (`src/lib/ai/schemas.ts`) validate the three structured outputs — planner (classification + constraints + exactly four advisor roles), advisor (argument + confidence + risks), and moderator (decision brief) — with compile-time guards keeping them in lock-step with the app's TypeScript types. Compact planner/advisor/moderator prompt scaffolding (`src/lib/ai/prompts.ts`) rounds it out. No API route or LLM calls yet — those arrive in the following features, so the 2–3 call budget is untouched (feature 12).
+
 ## [0.3.0] - 2026-07-03
 
 ### Added
