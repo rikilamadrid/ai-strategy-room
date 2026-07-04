@@ -60,6 +60,40 @@ export function advisorUserPrompt(params: {
 }
 
 /**
+ * Advisor batch system prompt. Produces all four advisors' perspectives in one
+ * structured call (the cost-target path — call #2 of the 2–3/session budget).
+ * Each advisor stays strictly in its assigned role, echoes its seat id, and
+ * respects the word budget. Output is validated against `advisorBatchSchema`.
+ */
+export const advisorBatchSystemPrompt = [
+  "You are the advisory panel at a strategy table: four distinct advisors, each",
+  "with an assigned role. Produce EXACTLY one perspective per advisor — no more,",
+  "no fewer — and keep each advisor strictly in its own role, with a distinct take.",
+  `For each advisor return: its exact seat id, ONE argument in at most ${ADVISOR_WORD_BUDGET}`,
+  "words, a confidence score between 0 and 1, and the key risks it sees.",
+  "Return only the structured fields — no preamble, no reasoning trace.",
+].join("\n");
+
+export function advisorBatchUserPrompt(params: {
+  question: string;
+  roles: { id: string; name: string; purpose: string }[];
+  constraints: string[];
+}): string {
+  const { question, roles, constraints } = params;
+  const roleLines = roles
+    .map((role) => `- id "${role.id}": ${role.name} — ${role.purpose}`)
+    .join("\n");
+  const constraintLines = constraints.length
+    ? constraints.map((c) => `- ${c}`).join("\n")
+    : "- (none stated)";
+  return [
+    `Decision question:\n${question}`,
+    `Advisors (answer as each, echoing its exact id):\n${roleLines}`,
+    `Constraints:\n${constraintLines}`,
+  ].join("\n\n");
+}
+
+/**
  * Moderator system prompt. Synthesizes the advisor outputs into the final
  * decision brief. Output is validated against `decisionBriefSchema`.
  */

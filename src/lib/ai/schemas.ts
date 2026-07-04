@@ -49,6 +49,25 @@ export const advisorSchema = z.object({
 });
 
 /**
+ * One advisor's slice of the batch, tagged with the seat `id` the planner chose
+ * so the client can bind each perspective back to its gauge (falling back to
+ * position if the model doesn't echo an id cleanly).
+ */
+export const advisorPerspectiveSchema = advisorSchema.extend({
+  id: z.string().min(1),
+});
+
+/**
+ * Advisor batch output — all four advisors' perspectives in one structured
+ * response. Requesting the four in a single call is the cost-target path
+ * (overview → "Recommended Call Pattern" step 2): call #2 of the 2–3/session
+ * budget, not four separate requests.
+ */
+export const advisorBatchSchema = z.object({
+  advisors: z.array(advisorPerspectiveSchema).length(4),
+});
+
+/**
  * Moderator output — the final decision brief synthesized from the advisor
  * outputs. This is the `DecisionBrief` the UI stamps in after validation.
  */
@@ -65,6 +84,8 @@ export const decisionBriefSchema = z.object({
 export type PlannerAdvisor = z.infer<typeof plannerAdvisorSchema>;
 export type PlannerOutput = z.infer<typeof plannerSchema>;
 export type AdvisorOutput = z.infer<typeof advisorSchema>;
+export type AdvisorPerspective = z.infer<typeof advisorPerspectiveSchema>;
+export type AdvisorBatchOutput = z.infer<typeof advisorBatchSchema>;
 export type DecisionBriefOutput = z.infer<typeof decisionBriefSchema>;
 
 /**
