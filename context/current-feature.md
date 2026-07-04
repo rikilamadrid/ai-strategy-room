@@ -1,36 +1,37 @@
-# Errors & Single-Advisor Retry
+# Timeline Replay
 
 ## Status
 
-Complete — merged to `main` 2026-07-03 (branch `feature/errors-and-retry` pruned). Detailed entry in `context/HISTORY.md`; user-facing summary under `## [Unreleased]` in `CHANGELOG.md`. Next up: feature 11 (timeline replay), which closes out Phase 2 — Workflow state.
+Implemented — feature 11 (`feature/timeline-replay`) is coded on the feature branch. `npm run lint` and `npm run build` pass; local server is available at `http://localhost:3004/`. Manual browser verification is still pending because automated browser control was unavailable in this session. Feature 10 is complete and already logged in `context/HISTORY.md` and `CHANGELOG.md`. This feature closes out **Phase 2 — Workflow state**.
 
 ## Goals
 
-- **Advisor error state.** An individual advisor can enter `status: 'error'`. Render it in-theme on the seat — a dim/cracked seal-red bezel and a "signal lost" label, needle slumped, no neon flicker (flicker is reserved for a completed argument). No generic browser alert.
-- **Workflow-level error notice in the timeline.** When an advisor faults, append a timeline row in the seal-red error tone (a new `TimelineEvent` `state: 'error'`) so the failure is legible in the live-discussion log. The rest of the workflow keeps running — a single advisor erroring does **not** halt the session.
-- **"Try another angle" control.** On a `complete` or `error` advisor, a small brass control re-runs *only that advisor*: it re-enters `thinking` (needle ticks) and then settles back to `complete` with an alternate fixture argument. It never reruns the whole workflow (hard rule) — no new stage transitions, no re-plan, no moderator rerun.
-- **Simulated failure path for testing.** A fixture flag (`simulatedErrorAdvisorId`) forces one advisor to error during the simulated run so the error + recovery UX is verifiable. Default `null` (clean demo run); flip to an advisor id to exercise the path.
-- Verify in browser: force an advisor error, confirm the other three advisors + mapping/moderating/brief are unaffected, then hit "Try another angle" to take the errored advisor back to completion.
+- Record the ordered workflow event sequence in store state as a replayable log while a session runs. The log should preserve the sequence of stage-level beats and advisor/error resolutions without mutating the finished session result.
+- Add a brass replay control to the live-discussion panel. It is only enabled once `status === 'complete'`; during a running session it stays visibly disabled.
+- When replay starts, the timeline should clear and re-reveal the recorded rows teletype-style from the top, with the live head behaving like the original run rather than dumping the full final list at once.
+- When replay ends, restore the settled final timeline state exactly as it was after completion. No new workflow run, no planner/advisor/moderator rerun, no fixture reset.
+- If it is cheap, re-trigger the final brief stamp at the end of replay so the closeout still feels mechanical rather than abrupt.
+- Verify in browser/build: complete a session, replay it, confirm the final state is unchanged after replay.
 
 ## Notes
 
-- Store already models `error` for both `WorkflowStatus` and `Advisor['status']`, and `canTransitionWorkflow` already permits a whole-workflow `error` transition (from any non-idle/non-complete/non-error stage). This feature exercises the *per-advisor* error + retry path; the whole-workflow `error` status stays reachable via `advanceStage('error')` but the simulation does not force it (single-advisor error ≠ workflow error).
-- Reuses feature-07 store actions (`setAdvisorStatus`, `setAdvisorResult`) and the feature-09 timed-resolution pattern. Retry is seat-local: a `setTimeout` in `AdvisorSeat` drives `thinking → complete`, cleaned up on unmount. The gauge animates against **real** `thinking` status — no fake activity.
-- New store action `logAdvisorError(message, timestampLabel)` mirrors `logTimelineEvent` (flips a prior `now` head to `done`) but stamps an `error` row instead of a `now` row.
-- New `TimelineEvent` state `'error'` renders seal-red with a neon glow so the muted wax tone stays legible on the gunmetal background.
-- Alternate retry arguments live in `advisorRetryResults` (fixtures) — one "another angle" per advisor. Note: the per-advisor argument *text* is not yet rendered on the seat (that panel is a later feature), so the observable retry feedback is the gauge (thinking → flicker-on) and status label; the regenerated argument lands in store state.
-- Error styling tracks real state (per the overview's "no neon for its own sake" caution) — the seal bezel only appears on a real `error` status.
-- **Depends on:** features 07 (states/actions) and 09 (per-advisor animated resolution). Both done.
-- **Cost budget:** no effect — pure client-side simulation + retry on a timer, zero LLM requests.
-- Respect `prefers-reduced-motion` where cheap (reuse the existing gauge/timeline gates); full still-frame a11y is feature 19.
+- Replay is explicitly called for in `context/features/11-timeline-replay.md` and the project overview's key interactions.
+- Reuse the feature-09 teletype reveal and existing fixture-driven event flow rather than creating a second simulation path.
+- Keep replay client-only and cost-neutral: zero network calls, zero LLM requests, no cache changes.
+- The canonical record should live in the store, not only inside component-local animation state, so Phase 3 can still replay real structured events later.
+- Implementation stores a cloned `replayLog` in Zustand, tracks `isReplaying` / `replayRunId`, replays rows through the existing teletype treatment, and restores the settled `timeline` when replay ends.
+- The final brief is re-keyed at replay completion so the stamp can fire again without rerunning the workflow.
+- Advisor "Try another angle" controls are disabled while replay runs so replay does not overlap with a single-advisor retry or mutate the settled advisor state mid-replay.
+- Verification so far: `npm run lint`, `npm run build`, and `curl -I http://localhost:3004/` pass. Automated browser verification could not complete: the in-app browser backend was unavailable, bundled Playwright browser was missing, system Chrome launched but the CDP verification script required an escalation that was rejected by the approval reviewer due account usage limits.
+- Existing unrelated working-tree edits in `AGENTS.md` and `CLAUDE.md` were present before this feature work and are out of scope.
+- **Depends on:** features 07 (store/timeline event infrastructure), 09 (simulation + reveal timing), and 10 (error rows should replay in sequence too).
 
 ## Out of Scope
 
-- Real API error handling, timeouts, rate limits (Phase 3 — this retries against the *simulation*).
-- Whole-workflow retry/restart beyond `reset` (single-advisor retry is the v1 feature).
-- Timeline replay (feature 11).
-- A per-advisor argument panel that would render the regenerated text (later feature).
-- Toast library wiring — errors stay in-canvas / in-timeline for v1.
+- Scrubbing, pause, seek, speed controls, or a mini transport bar.
+- Replaying a partial/in-progress session.
+- Changing the data source for the simulation or adding persistence.
+- Accessibility-specific reduced-motion replay refinements beyond honoring the current reduced-motion gates (feature 19 handles the broader pass).
 
 ## History
 

@@ -30,6 +30,7 @@ export interface StrategyStoreSnapshot {
   question: string;
   advisors: Advisor[];
   timeline: TimelineEvent[];
+  replayLog: TimelineEvent[];
   decisionBrief?: DecisionBrief;
 }
 
@@ -40,6 +41,9 @@ export interface StrategyStoreState extends StrategyStoreSnapshot {
    * restarts cleanly. `0` means no session has started.
    */
   runId: number;
+  replayRunId: number;
+  isReplaying: boolean;
+  briefAnimationKey: number;
   setQuestion: (question: string) => void;
   startSession: (question?: string) => void;
   advanceStage: (nextStatus?: WorkflowStatus) => boolean;
@@ -49,6 +53,8 @@ export interface StrategyStoreState extends StrategyStoreSnapshot {
   logTimelineEvent: (message: string, timestampLabel: string) => void;
   logAdvisorError: (message: string, timestampLabel: string) => void;
   sealTimeline: () => void;
+  startReplay: () => boolean;
+  finishReplay: () => void;
   setBrief: (brief?: DecisionBrief) => void;
   reset: () => void;
 }
@@ -62,6 +68,7 @@ function cloneSession(session: StrategySession): StrategyStoreSnapshot {
       risks: advisor.risks ? [...advisor.risks] : undefined,
     })),
     timeline: session.timeline.map((event) => ({ ...event })),
+    replayLog: session.timeline.map((event) => ({ ...event })),
     decisionBrief: session.decisionBrief
       ? {
           ...session.decisionBrief,
@@ -115,8 +122,13 @@ const IDLE_SESSION: StrategyStoreSnapshot = {
   question: "",
   advisors: createPlanningAdvisors(INITIAL_SESSION.advisors),
   timeline: [],
+  replayLog: [],
   decisionBrief: undefined,
 };
+
+function cloneTimelineEvent(event: TimelineEvent): TimelineEvent {
+  return { ...event };
+}
 
 function createPlanningSession(question: string): StrategyStoreSnapshot {
   const normalizedQuestion = question.trim();
@@ -126,6 +138,7 @@ function createPlanningSession(question: string): StrategyStoreSnapshot {
     question: normalizedQuestion,
     advisors: createPlanningAdvisors(INITIAL_SESSION.advisors),
     timeline: [],
+    replayLog: [],
     decisionBrief: undefined,
   };
 }
@@ -133,6 +146,9 @@ function createPlanningSession(question: string): StrategyStoreSnapshot {
 export const useStrategyStore = create<StrategyStoreState>((set) => ({
   ...IDLE_SESSION,
   runId: 0,
+  replayRunId: 0,
+  isReplaying: false,
+  briefAnimationKey: 0,
   setQuestion: (question) => {
     set({ question });
   },
@@ -144,7 +160,12 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
         return state;
       }
 
-      return { ...createPlanningSession(nextQuestion), runId: state.runId + 1 };
+      return {
+        ...createPlanningSession(nextQuestion),
+        runId: state.runId + 1,
+        isReplaying: false,
+        briefAnimationKey: 0,
+      };
     });
   },
   advanceStage: (nextStatus) => {
@@ -188,20 +209,26 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
     }));
   },
   appendTimelineEvent: (event) => {
+    const nextEvent = cloneTimelineEvent(event);
+
     set((state) => ({
-      timeline: [...state.timeline, event],
+      timeline: [...state.timeline, nextEvent],
+      replayLog: [...state.replayLog, cloneTimelineEvent(nextEvent)],
     }));
   },
   logTimelineEvent: (message, timestampLabel) => {
     // The newest event is the live `now` row; any prior `now` resolves to `done`
     // so the timeline reads as a single advancing head with a green history.
+    const nextEvent = { message, timestampLabel, state: "now" as const };
+
     set((state) => ({
       timeline: [
         ...state.timeline.map((event) =>
           event.state === "now" ? { ...event, state: "done" as const } : event,
         ),
-        { message, timestampLabel, state: "now" as const },
+        nextEvent,
       ],
+      replayLog: [...state.replayLog, cloneTimelineEvent(nextEvent)],
     }));
   },
   logAdvisorError: (message, timestampLabel) => {
@@ -209,13 +236,16 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
     // it advances the head (any prior `now` flips to `done`), but the row reads
     // as `error` rather than becoming the live `now` — the other advisors keep
     // deliberating, so the workflow head moves on to the next one.
+    const nextEvent = { message, timestampLabel, state: "error" as const };
+
     set((state) => ({
       timeline: [
         ...state.timeline.map((event) =>
           event.state === "now" ? { ...event, state: "done" as const } : event,
         ),
-        { message, timestampLabel, state: "error" as const },
+        nextEvent,
       ],
+      replayLog: [...state.replayLog, cloneTimelineEvent(nextEvent)],
     }));
   },
   sealTimeline: () => {
@@ -224,6 +254,40 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
         event.state === "now" ? { ...event, state: "done" as const } : event,
       ),
     }));
+  },
+  startReplay: () => {
+    let started = false;
+
+    set((state) => {
+      if (
+        state.status !== "complete" ||
+        state.isReplaying ||
+        state.replayLog.length === 0
+      ) {
+        return state;
+      }
+
+      started = true;
+
+      return {
+        isReplaying: true,
+        replayRunId: state.replayRunId + 1,
+      };
+    });
+
+    return started;
+  },
+  finishReplay: () => {
+    set((state) => {
+      if (!state.isReplaying) {
+        return state;
+      }
+
+      return {
+        isReplaying: false,
+        briefAnimationKey: state.briefAnimationKey + 1,
+      };
+    });
   },
   setBrief: (brief) => {
     set((state) => {
@@ -249,6 +313,12 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
     });
   },
   reset: () => {
-    set({ ...cloneSession(demoStrategySession), runId: 0 });
+    set({
+      ...cloneSession(demoStrategySession),
+      runId: 0,
+      replayRunId: 0,
+      isReplaying: false,
+      briefAnimationKey: 0,
+    });
   },
 }));
