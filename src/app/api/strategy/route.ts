@@ -4,17 +4,24 @@ import { createAnthropicClient } from "@/lib/ai/client";
 import {
   advisorBatchSystemPrompt,
   advisorBatchUserPrompt,
+  moderatorSystemPrompt,
+  moderatorUserPrompt,
   plannerSystemPrompt,
   plannerUserPrompt,
 } from "@/lib/ai/prompts";
-import { advisorBatchSchema, plannerSchema } from "@/lib/ai/schemas";
+import {
+  advisorBatchSchema,
+  decisionBriefSchema,
+  plannerSchema,
+} from "@/lib/ai/schemas";
 
 /**
  * The strategy workflow's server seam. It dispatches the structured LLM calls
  * that make up the 2–3-request/session budget (overview → "Recommended Call
  * Pattern"): the **planner action** (feature 13, call #1) and the **advisor
  * action** (feature 14, call #2 — all four perspectives in one structured
- * response). The moderator (feature 15) adds its action here later.
+ * response), and the **moderator action** (feature 15, call #3 — the single
+ * decision brief synthesized from the four validated perspectives).
  *
  * The route validates every model output against its Zod schema before it
  * crosses back to the client — a validation failure surfaces as a typed error,
@@ -35,6 +42,9 @@ const PLANNER_MAX_OUTPUT_TOKENS = 512;
 
 /** Four advisors, each capped to a short argument + a few risks — kept tight. */
 const ADVISOR_MAX_OUTPUT_TOKENS = 1024;
+
+/** The brief is structured and terse — one recommendation plus short lists. */
+const MODERATOR_MAX_OUTPUT_TOKENS = 768;
 
 function errorResponse<Code extends string>(
   status: number,
@@ -155,6 +165,62 @@ async function handleAdvise(body: unknown): Promise<NextResponse> {
   }
 }
 
+async function handleModerate(body: unknown): Promise<NextResponse> {
+  const gate = readQuestion(body);
+  if (!gate.ok) {
+    return gate.response;
+  }
+
+  // Both the plan (for advisor display names) and the four validated perspectives
+  // ride along from the client (stateless app) — re-validate each here so a
+  // tampered roster or malformed perspective can't drive the moderator prompt.
+  // Client-input checks, so they run before the provider-config gate.
+  const parsedPlan = plannerSchema.safeParse((body as { plan?: unknown })?.plan);
+  if (!parsedPlan.success) {
+    return errorResponse(400, "invalid_request", "A valid plan is required.");
+  }
+
+  const parsedAdvisors = advisorBatchSchema.safeParse({
+    advisors: (body as { advisors?: unknown })?.advisors,
+  });
+  if (!parsedAdvisors.success) {
+    return errorResponse(400, "invalid_request", "Valid advisor perspectives are required.");
+  }
+
+  const key = requireApiKey();
+  if (!key.ok) {
+    return key.response;
+  }
+
+  // Bind each perspective back to its advisor's display name via the seat id the
+  // planner chose, falling back to the id itself if a name isn't found.
+  const nameById = new Map(parsedPlan.data.advisors.map((role) => [role.id, role.name]));
+  const perspectives = parsedAdvisors.data.advisors.map((perspective) => ({
+    name: nameById.get(perspective.id) ?? perspective.id,
+    argument: perspective.argument,
+    confidence: perspective.confidence,
+    risks: perspective.risks,
+  }));
+
+  const client = createAnthropicClient({ apiKey: key.apiKey });
+
+  try {
+    const { object, usage } = await client.generateStructured({
+      schema: decisionBriefSchema,
+      schemaName: "DecisionBrief",
+      system: moderatorSystemPrompt,
+      prompt: moderatorUserPrompt({ question: gate.question, advisors: perspectives }),
+      maxOutputTokens: MODERATOR_MAX_OUTPUT_TOKENS,
+    });
+
+    return NextResponse.json({ ok: true, brief: object, usage, model: client.model });
+  } catch {
+    // Provider/transport failure or a schema-validation rejection — either way the
+    // brief is unusable, so no partial/unvalidated synthesis crosses the seam.
+    return errorResponse(502, "moderator_failed", "The moderator could not synthesize a valid brief.");
+  }
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   let body: unknown;
   try {
@@ -169,6 +235,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       return handlePlan(body);
     case "advise":
       return handleAdvise(body);
+    case "moderate":
+      return handleModerate(body);
     default:
       return errorResponse(400, "invalid_request", "Unsupported strategy action.");
   }

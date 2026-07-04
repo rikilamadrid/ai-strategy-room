@@ -2,8 +2,14 @@
 
 import { useEffect } from "react";
 
-import { demoStrategySession } from "@/lib/fixtures";
-import { AdvisorError, PlannerError, requestAdvisors, requestPlan } from "@/lib/ai/strategy-api";
+import {
+  AdvisorError,
+  ModeratorError,
+  PlannerError,
+  requestAdvisors,
+  requestModerator,
+  requestPlan,
+} from "@/lib/ai/strategy-api";
 import type { AdvisorPerspective } from "@/lib/ai/schemas";
 import { useStrategyStore } from "@/stores/strategy-store";
 
@@ -11,20 +17,20 @@ import { useStrategyStore } from "@/stores/strategy-store";
  * Drives the workflow after `startSession` bumps `runId`: planning → advising →
  * mapping → moderating → complete.
  *
- * As of feature 14 the **planning** and **advising** stages are both real
- * network calls — call #1 (planner) classifies the question and picks the four
- * roles; call #2 (advisor batch) returns all four perspectives in one structured
- * response (the cost-target path — overview → "Recommended Call Pattern" step 2,
- * keeping the session at 2–3 requests). Because it's a single batch call, the
- * four advisors are genuinely in flight together and settle together: they all
- * flip to `thinking` when the request fires and to `complete` when it resolves —
- * no faked one-at-a-time settle (that would need four separate calls). The
- * mapping → moderating tail is still a fixture-backed *simulation* on a timer
- * (moderator synthesis is feature 15) — those steps make no network calls.
+ * As of feature 15 every stage is backed by a real network call — the workflow
+ * is the full 2–3-request/session budget end to end. Call #1 (planner)
+ * classifies the question and picks the four roles; call #2 (advisor batch)
+ * returns all four perspectives in one structured response; call #3 (moderator)
+ * synthesizes those four validated perspectives into the single decision brief.
+ * Because the advisor step is a single batch call, the four advisors are
+ * genuinely in flight together and settle together (no faked one-at-a-time
+ * settle). The moderator call is genuinely in flight across the mapping →
+ * moderating tail — the brief that stamps in on `complete` is its validated
+ * output, not a fixture.
  *
  * Every state change is real store state, so the gauges and timeline animate
- * against genuine workflow status (no fake glow). A planner or advisor failure
- * routes to the store's `error` path instead of advancing.
+ * against genuine workflow status (no fake glow). A planner, advisor, or
+ * moderator failure routes to the store's `error` path instead of advancing.
  */
 
 /** In-theme, non-leaking failure copy per typed planner-error code. */
@@ -43,12 +49,13 @@ function advisorFailureMessage(error: unknown): string {
   return "Advisor panel faulted — signal lost";
 }
 
-// Mechanical cadence (ms) for the still-simulated mapping → moderating tail.
-// Neither stage is on a real call yet; the planning and advising durations are
-// the real calls' latency, not a timer.
-const POST_ADVISORS_GAP_MS = 700;
-const MAPPING_MS = 1100;
-const MODERATING_MS = 1300;
+/** In-theme, non-leaking failure copy per typed moderator-error code. */
+function moderatorFailureMessage(error: unknown): string {
+  if (error instanceof ModeratorError && error.code === "not_configured") {
+    return "Moderator offline — AI provider not configured";
+  }
+  return "Moderator instrument faulted — signal lost";
+}
 
 function formatElapsed(startedAt: number): string {
   const totalSeconds = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
@@ -70,16 +77,10 @@ export function useStrategySimulation(): void {
 
     const store = useStrategyStore.getState;
     const startedAt = Date.now();
-    const timers: ReturnType<typeof setTimeout>[] = [];
     // A new session (or reset) bumps runId and cancels this run: async resolutions
-    // check `cancelled` before touching the store, in-flight fetches are aborted,
-    // and any pending simulation timers are cleared in cleanup.
+    // check `cancelled` before touching the store and in-flight fetches are aborted.
     let cancelled = false;
     const controller = new AbortController();
-
-    const at = (delay: number, run: () => void) => {
-      timers.push(setTimeout(run, delay));
-    };
 
     const log = (message: string) => {
       store().logTimelineEvent(message, formatElapsed(startedAt));
@@ -108,31 +109,6 @@ export function useStrategySimulation(): void {
       log("Advisors filed their arguments");
     };
 
-    // mapping → complete: still fixture-backed (feature 15 replaces the moderator
-    // with a real call). Scheduled only once the real advisor batch has settled.
-    const runSimulatedTail = () => {
-      // mapping — agreements and conflicts get plotted.
-      at(POST_ADVISORS_GAP_MS, () => {
-        store().advanceStage("mapping");
-        log("Mapping agreements and conflicts");
-      });
-
-      // moderating — the moderator synthesizes the brief.
-      const moderatingAt = POST_ADVISORS_GAP_MS + MAPPING_MS;
-      at(moderatingAt, () => {
-        store().advanceStage("moderating");
-        log("Moderator synthesizing the brief");
-      });
-
-      // complete — the decision brief stamps in.
-      at(moderatingAt + MODERATING_MS, () => {
-        store().advanceStage("complete");
-        store().setBrief(demoStrategySession.decisionBrief);
-        log("Decision brief sealed");
-        store().sealTimeline();
-      });
-    };
-
     void (async () => {
       // planning — the real planner call. On success it replaces the seeded roster
       // with the chosen roles and stamps the constraints row.
@@ -158,15 +134,13 @@ export function useStrategySimulation(): void {
       store().advisors.forEach((advisor) => store().setAdvisorStatus(advisor.id, "thinking"));
       log("Advisors deliberating in parallel");
 
+      let perspectives: AdvisorPerspective[];
       try {
-        const { advisors: perspectives } = await requestAdvisors(
-          store().question,
-          plan,
-          controller.signal,
-        );
+        const result = await requestAdvisors(store().question, plan, controller.signal);
         if (cancelled) {
           return;
         }
+        perspectives = result.advisors;
         applyPerspectives(perspectives);
       } catch (error) {
         if (cancelled) {
@@ -176,13 +150,40 @@ export function useStrategySimulation(): void {
         return;
       }
 
-      runSimulatedTail();
+      // mapping → moderating — the real moderator call (#3) is genuinely in flight
+      // across this tail. mapping is the hand-off beat; the call's latency is spent
+      // in `moderating`, where the moderator actually synthesizes the brief.
+      store().advanceStage("mapping");
+      log("Mapping agreements and conflicts");
+      store().advanceStage("moderating");
+      log("Moderator synthesizing the brief");
+
+      try {
+        const { brief } = await requestModerator(
+          store().question,
+          plan,
+          perspectives,
+          controller.signal,
+        );
+        if (cancelled) {
+          return;
+        }
+        // complete — the validated decision brief stamps in (wax-seal reveal).
+        store().advanceStage("complete");
+        store().setBrief(brief);
+        log("Decision brief sealed");
+        store().sealTimeline();
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        store().failWorkflow(moderatorFailureMessage(error), formatElapsed(startedAt));
+      }
     })();
 
     return () => {
       cancelled = true;
       controller.abort();
-      timers.forEach(clearTimeout);
     };
   }, [runId]);
 }

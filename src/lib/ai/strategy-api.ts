@@ -1,5 +1,9 @@
 import type { TokenUsage } from "./client";
-import type { AdvisorPerspective, PlannerOutput } from "./schemas";
+import type {
+  AdvisorPerspective,
+  DecisionBriefOutput,
+  PlannerOutput,
+} from "./schemas";
 
 /**
  * The client ↔ `/api/strategy` contract. Kept in one place so the route handler
@@ -8,7 +12,7 @@ import type { AdvisorPerspective, PlannerOutput } from "./schemas";
  * the schema-validated `PlannerOutput`.
  */
 
-/** Request body for the planner action. The moderator action lands in feature 15. */
+/** Request body for the planner action — call #1, the first of the 2–3/session budget. */
 export interface PlanRequestBody {
   action: "plan";
   question: string;
@@ -25,6 +29,19 @@ export interface AdviseRequestBody {
   plan: PlannerOutput;
 }
 
+/**
+ * Request body for the moderator action (feature 15) — call #3, the final of the
+ * 2–3/session budget. The stateless client sends back both the validated plan
+ * (for advisor display names) and the four validated perspectives; the moderator
+ * synthesizes them into the single decision brief rather than re-deriving them.
+ */
+export interface ModerateRequestBody {
+  action: "moderate";
+  question: string;
+  plan: PlannerOutput;
+  advisors: AdvisorPerspective[];
+}
+
 /** Successful planner payload: the validated plan plus cost/observability fields. */
 export interface PlanSuccess {
   plan: PlannerOutput;
@@ -35,6 +52,13 @@ export interface PlanSuccess {
 /** Successful advisor payload: the four validated perspectives plus cost fields. */
 export interface AdviseSuccess {
   advisors: AdvisorPerspective[];
+  usage: TokenUsage;
+  model: string;
+}
+
+/** Successful moderator payload: the validated decision brief plus cost fields. */
+export interface ModerateSuccess {
+  brief: DecisionBriefOutput;
   usage: TokenUsage;
   model: string;
 }
@@ -51,6 +75,12 @@ export type AdvisorErrorCode =
   | "not_configured"
   | "advisor_failed";
 
+/** Moderator-action error codes (mirror the others, with the moderator failure). */
+export type ModeratorErrorCode =
+  | "invalid_request"
+  | "not_configured"
+  | "moderator_failed";
+
 export interface PlanErrorBody {
   code: PlanErrorCode;
   message: string;
@@ -58,6 +88,11 @@ export interface PlanErrorBody {
 
 export interface AdvisorErrorBody {
   code: AdvisorErrorCode;
+  message: string;
+}
+
+export interface ModeratorErrorBody {
+  code: ModeratorErrorCode;
   message: string;
 }
 
@@ -69,6 +104,10 @@ export type PlanApiResponse =
 export type AdviseApiResponse =
   | ({ ok: true } & AdviseSuccess)
   | { ok: false; error: AdvisorErrorBody };
+
+export type ModerateApiResponse =
+  | ({ ok: true } & ModerateSuccess)
+  | { ok: false; error: ModeratorErrorBody };
 
 /**
  * Thrown by `requestPlan` when the planner call fails for any reason — a typed
@@ -182,4 +221,66 @@ export async function requestAdvisors(
   }
 
   return { advisors: data.advisors, usage: data.usage, model: data.model };
+}
+
+/**
+ * Thrown by `requestModerator` when the moderator call fails for any reason — the
+ * typed `code` lets the caller surface a specific, non-leaking error state rather
+ * than passing a malformed brief downstream (feature 15 goal).
+ */
+export class ModeratorError extends Error {
+  readonly code: ModeratorErrorCode;
+
+  constructor(code: ModeratorErrorCode, message: string) {
+    super(message);
+    this.name = "ModeratorError";
+    this.code = code;
+  }
+}
+
+/**
+ * POST the question + validated plan + validated perspectives to the moderator
+ * action and return the schema-validated decision brief. Rejects with a
+ * `ModeratorError` on a network failure, a non-2xx response, or a typed error
+ * body — the caller surfaces a visible error state rather than a silent fallback
+ * (CLAUDE.md → "A failed validation is a visible error state").
+ */
+export async function requestModerator(
+  question: string,
+  plan: PlannerOutput,
+  advisors: AdvisorPerspective[],
+  signal?: AbortSignal,
+): Promise<ModerateSuccess> {
+  let response: Response;
+  try {
+    response = await fetch("/api/strategy", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        action: "moderate",
+        question,
+        plan,
+        advisors,
+      } satisfies ModerateRequestBody),
+      signal,
+    });
+  } catch {
+    throw new ModeratorError("moderator_failed", "The moderator could not be reached.");
+  }
+
+  let data: ModerateApiResponse;
+  try {
+    data = (await response.json()) as ModerateApiResponse;
+  } catch {
+    throw new ModeratorError("moderator_failed", "The moderator returned an unreadable response.");
+  }
+
+  if (!response.ok || !data.ok) {
+    const error = !data.ok
+      ? data.error
+      : { code: "moderator_failed" as const, message: "The moderator call failed." };
+    throw new ModeratorError(error.code, error.message);
+  }
+
+  return { brief: data.brief, usage: data.usage, model: data.model };
 }
