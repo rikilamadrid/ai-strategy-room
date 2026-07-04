@@ -10,6 +10,7 @@ import { useStrategyStore } from "@/stores/strategy-store";
 
 export function StrategyTable() {
   const status = useStrategyStore((state) => state.status);
+  const sessionCost = useStrategyStore((state) => state.sessionCost);
   const advisors = useStrategyStore((state) => state.advisors);
   const timeline = useStrategyStore((state) => state.timeline);
   const replayLog = useStrategyStore((state) => state.replayLog);
@@ -34,7 +35,7 @@ export function StrategyTable() {
             a cinematic decision chamber
           </p>
         </div>
-        <CostBadge status={status} />
+        <CostBadge status={status} cost={sessionCost} />
       </header>
 
       <section className="mt-7 rounded-lg border-2 border-brass-dark bg-[radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_7%,transparent),transparent_60%),repeating-radial-gradient(circle_at_50%_50%,color-mix(in_srgb,var(--color-brass)_4%,transparent)_0_2px,transparent_2px_26px),var(--color-bg)] px-5 py-[34px] shadow-[inset_0_0_60px_rgb(0_0_0_/_70%)]">

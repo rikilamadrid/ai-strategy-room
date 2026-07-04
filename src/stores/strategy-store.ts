@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { demoStrategySession } from "@/lib/fixtures";
+import type { TokenUsage } from "@/lib/ai/client";
 import type { PlannerOutput } from "@/lib/ai/schemas";
 import type {
   Advisor,
@@ -33,7 +34,35 @@ export interface StrategyStoreSnapshot {
   timeline: TimelineEvent[];
   replayLog: TimelineEvent[];
   decisionBrief?: DecisionBrief;
+  /**
+   * The validated planner output for the current session, once it lands.
+   * Kept around (not just its derived seat roster) so a single-advisor
+   * regenerate ("Try another angle") can re-send the full plan + constraints
+   * the route needs to re-validate, without rerunning the planner call.
+   */
+  plan?: PlannerOutput;
 }
+
+/**
+ * Cumulative cost/observability readout for the current session — real token,
+ * request, and cache counts, not a placeholder (CLAUDE.md → "the session-cost
+ * badge reflects real token/call/cache counts"). Resets with the session.
+ */
+export interface SessionCost {
+  totalTokens: number;
+  liveRequests: number;
+  cacheHits: number;
+  latencyMs: number;
+  lastCacheHit: boolean;
+}
+
+const IDLE_SESSION_COST: SessionCost = {
+  totalTokens: 0,
+  liveRequests: 0,
+  cacheHits: 0,
+  latencyMs: 0,
+  lastCacheHit: false,
+};
 
 export interface StrategyStoreState extends StrategyStoreSnapshot {
   /**
@@ -45,6 +74,7 @@ export interface StrategyStoreState extends StrategyStoreSnapshot {
   replayRunId: number;
   isReplaying: boolean;
   briefAnimationKey: number;
+  sessionCost: SessionCost;
   setQuestion: (question: string) => void;
   startSession: (question?: string) => void;
   advanceStage: (nextStatus?: WorkflowStatus) => boolean;
@@ -59,6 +89,7 @@ export interface StrategyStoreState extends StrategyStoreSnapshot {
   startReplay: () => boolean;
   finishReplay: () => void;
   setBrief: (brief?: DecisionBrief) => void;
+  recordUsage: (usage: TokenUsage, meta: { cacheHit: boolean; latencyMs: number }) => void;
   reset: () => void;
 }
 
@@ -81,6 +112,7 @@ function cloneSession(session: StrategySession): StrategyStoreSnapshot {
           unknowns: [...session.decisionBrief.unknowns],
         }
       : undefined,
+    plan: undefined,
   };
 }
 
@@ -127,6 +159,7 @@ const IDLE_SESSION: StrategyStoreSnapshot = {
   timeline: [],
   replayLog: [],
   decisionBrief: undefined,
+  plan: undefined,
 };
 
 function cloneTimelineEvent(event: TimelineEvent): TimelineEvent {
@@ -143,6 +176,7 @@ function createPlanningSession(question: string): StrategyStoreSnapshot {
     timeline: [],
     replayLog: [],
     decisionBrief: undefined,
+    plan: undefined,
   };
 }
 
@@ -152,6 +186,7 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
   replayRunId: 0,
   isReplaying: false,
   briefAnimationKey: 0,
+  sessionCost: IDLE_SESSION_COST,
   setQuestion: (question) => {
     set({ question });
   },
@@ -168,6 +203,7 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
         runId: state.runId + 1,
         isReplaying: false,
         briefAnimationKey: 0,
+        sessionCost: IDLE_SESSION_COST,
       };
     });
   },
@@ -199,6 +235,7 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
 
       return {
         advisors,
+        plan: result,
         timeline: [
           ...state.timeline.map((event) =>
             event.state === "now" ? { ...event, state: "done" as const } : event,
@@ -376,6 +413,17 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
       };
     });
   },
+  recordUsage: (usage, meta) => {
+    set((state) => ({
+      sessionCost: {
+        totalTokens: state.sessionCost.totalTokens + (usage.totalTokens ?? 0),
+        liveRequests: state.sessionCost.liveRequests + (meta.cacheHit ? 0 : 1),
+        cacheHits: state.sessionCost.cacheHits + (meta.cacheHit ? 1 : 0),
+        latencyMs: state.sessionCost.latencyMs + meta.latencyMs,
+        lastCacheHit: meta.cacheHit,
+      },
+    }));
+  },
   reset: () => {
     set({
       ...cloneSession(demoStrategySession),
@@ -383,6 +431,7 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
       replayRunId: 0,
       isReplaying: false,
       briefAnimationKey: 0,
+      sessionCost: IDLE_SESSION_COST,
     });
   },
 }));

@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
 
+import {
+  getCachedAdvisors,
+  getCachedBrief,
+  getCachedPlan,
+  setCachedAdvisors,
+  setCachedBrief,
+  setCachedPlan,
+} from "@/lib/cache";
 import { createAnthropicClient } from "@/lib/ai/client";
+import type { TokenUsage } from "@/lib/ai/client";
 import {
   advisorBatchSystemPrompt,
   advisorBatchUserPrompt,
+  advisorSystemPrompt,
+  advisorUserPrompt,
   moderatorSystemPrompt,
   moderatorUserPrompt,
   plannerSystemPrompt,
@@ -11,6 +22,7 @@ import {
 } from "@/lib/ai/prompts";
 import {
   advisorBatchSchema,
+  advisorSchema,
   decisionBriefSchema,
   plannerSchema,
 } from "@/lib/ai/schemas";
@@ -45,6 +57,9 @@ const ADVISOR_MAX_OUTPUT_TOKENS = 1024;
 
 /** The brief is structured and terse — one recommendation plus short lists. */
 const MODERATOR_MAX_OUTPUT_TOKENS = 768;
+
+/** A cache hit makes no model call, so it reports no tokens spent. */
+const ZERO_USAGE: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
 function errorResponse<Code extends string>(
   status: number,
@@ -99,12 +114,25 @@ async function handlePlan(body: unknown): Promise<NextResponse> {
     return gate.response;
   }
 
+  const cached = getCachedPlan(gate.question);
+  if (cached) {
+    return NextResponse.json({
+      ok: true,
+      plan: cached.plan,
+      usage: ZERO_USAGE,
+      model: cached.model,
+      cacheHit: true,
+      latencyMs: 0,
+    });
+  }
+
   const key = requireApiKey();
   if (!key.ok) {
     return key.response;
   }
 
   const client = createAnthropicClient({ apiKey: key.apiKey });
+  const startedAt = Date.now();
 
   try {
     const { object, usage } = await client.generateStructured({
@@ -115,7 +143,15 @@ async function handlePlan(body: unknown): Promise<NextResponse> {
       maxOutputTokens: PLANNER_MAX_OUTPUT_TOKENS,
     });
 
-    return NextResponse.json({ ok: true, plan: object, usage, model: client.model });
+    setCachedPlan(gate.question, object, client.model);
+    return NextResponse.json({
+      ok: true,
+      plan: object,
+      usage,
+      model: client.model,
+      cacheHit: false,
+      latencyMs: Date.now() - startedAt,
+    });
   } catch {
     // Covers both provider/transport failures and schema-validation rejections
     // from `generateStructured` — either way the plan is unusable downstream.
@@ -137,12 +173,25 @@ async function handleAdvise(body: unknown): Promise<NextResponse> {
     return errorResponse(400, "invalid_request", "A valid plan is required.");
   }
 
+  const cached = getCachedAdvisors(gate.question);
+  if (cached) {
+    return NextResponse.json({
+      ok: true,
+      advisors: cached.advisors,
+      usage: ZERO_USAGE,
+      model: cached.model,
+      cacheHit: true,
+      latencyMs: 0,
+    });
+  }
+
   const key = requireApiKey();
   if (!key.ok) {
     return key.response;
   }
 
   const client = createAnthropicClient({ apiKey: key.apiKey });
+  const startedAt = Date.now();
 
   try {
     const { object, usage } = await client.generateStructured({
@@ -157,11 +206,80 @@ async function handleAdvise(body: unknown): Promise<NextResponse> {
       maxOutputTokens: ADVISOR_MAX_OUTPUT_TOKENS,
     });
 
-    return NextResponse.json({ ok: true, advisors: object.advisors, usage, model: client.model });
+    setCachedAdvisors(gate.question, object.advisors, client.model);
+    return NextResponse.json({
+      ok: true,
+      advisors: object.advisors,
+      usage,
+      model: client.model,
+      cacheHit: false,
+      latencyMs: Date.now() - startedAt,
+    });
   } catch {
     // Provider/transport failure or a schema-validation rejection — either way the
     // batch is unusable, so no partial/unvalidated perspectives cross the seam.
     return errorResponse(502, "advisor_failed", "The advisors could not produce valid perspectives.");
+  }
+}
+
+/**
+ * Single-advisor regeneration (feature 10's "Try another angle", made real by
+ * feature 16). Re-prompts exactly one role from the already-validated plan —
+ * never the full batch, and never cached, since the point of "another angle"
+ * is a fresh take each time (CLAUDE.md → "Don't let 'Try another angle' rerun
+ * the full workflow").
+ */
+async function handleRegenerateAdvisor(body: unknown): Promise<NextResponse> {
+  const gate = readQuestion(body);
+  if (!gate.ok) {
+    return gate.response;
+  }
+
+  const parsedPlan = plannerSchema.safeParse((body as { plan?: unknown })?.plan);
+  if (!parsedPlan.success) {
+    return errorResponse(400, "invalid_request", "A valid plan is required.");
+  }
+
+  const roleId = (body as { roleId?: unknown })?.roleId;
+  const role =
+    typeof roleId === "string" ? parsedPlan.data.advisors.find((r) => r.id === roleId) : undefined;
+  if (!role) {
+    return errorResponse(400, "invalid_request", "A valid role id is required.");
+  }
+
+  const key = requireApiKey();
+  if (!key.ok) {
+    return key.response;
+  }
+
+  const client = createAnthropicClient({ apiKey: key.apiKey });
+  const startedAt = Date.now();
+
+  try {
+    const { object, usage } = await client.generateStructured({
+      schema: advisorSchema,
+      schemaName: "AdvisorPerspective",
+      system: advisorSystemPrompt,
+      prompt: advisorUserPrompt({
+        question: gate.question,
+        role,
+        constraints: parsedPlan.data.constraints,
+      }),
+      maxOutputTokens: ADVISOR_MAX_OUTPUT_TOKENS,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      perspective: { id: role.id, ...object },
+      usage,
+      model: client.model,
+      cacheHit: false,
+      latencyMs: Date.now() - startedAt,
+    });
+  } catch {
+    // Provider/transport failure or a schema-validation rejection — either way
+    // the perspective is unusable, so no partial/unvalidated take crosses the seam.
+    return errorResponse(502, "advisor_failed", "The advisor could not produce a valid perspective.");
   }
 }
 
@@ -187,6 +305,18 @@ async function handleModerate(body: unknown): Promise<NextResponse> {
     return errorResponse(400, "invalid_request", "Valid advisor perspectives are required.");
   }
 
+  const cached = getCachedBrief(gate.question);
+  if (cached) {
+    return NextResponse.json({
+      ok: true,
+      brief: cached.brief,
+      usage: ZERO_USAGE,
+      model: cached.model,
+      cacheHit: true,
+      latencyMs: 0,
+    });
+  }
+
   const key = requireApiKey();
   if (!key.ok) {
     return key.response;
@@ -203,6 +333,7 @@ async function handleModerate(body: unknown): Promise<NextResponse> {
   }));
 
   const client = createAnthropicClient({ apiKey: key.apiKey });
+  const startedAt = Date.now();
 
   try {
     const { object, usage } = await client.generateStructured({
@@ -213,7 +344,15 @@ async function handleModerate(body: unknown): Promise<NextResponse> {
       maxOutputTokens: MODERATOR_MAX_OUTPUT_TOKENS,
     });
 
-    return NextResponse.json({ ok: true, brief: object, usage, model: client.model });
+    setCachedBrief(gate.question, object, client.model);
+    return NextResponse.json({
+      ok: true,
+      brief: object,
+      usage,
+      model: client.model,
+      cacheHit: false,
+      latencyMs: Date.now() - startedAt,
+    });
   } catch {
     // Provider/transport failure or a schema-validation rejection — either way the
     // brief is unusable, so no partial/unvalidated synthesis crosses the seam.
@@ -235,6 +374,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       return handlePlan(body);
     case "advise":
       return handleAdvise(body);
+    case "regenerate":
+      return handleRegenerateAdvisor(body);
     case "moderate":
       return handleModerate(body);
     default:

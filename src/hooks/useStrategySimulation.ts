@@ -120,6 +120,10 @@ export function useStrategySimulation(): void {
         }
         plan = result.plan;
         store().applyPlannerResult(plan, formatElapsed(startedAt));
+        store().recordUsage(result.usage, {
+          cacheHit: result.cacheHit,
+          latencyMs: result.latencyMs,
+        });
       } catch (error) {
         if (cancelled) {
           return;
@@ -142,6 +146,10 @@ export function useStrategySimulation(): void {
         }
         perspectives = result.advisors;
         applyPerspectives(perspectives);
+        store().recordUsage(result.usage, {
+          cacheHit: result.cacheHit,
+          latencyMs: result.latencyMs,
+        });
       } catch (error) {
         if (cancelled) {
           return;
@@ -159,7 +167,7 @@ export function useStrategySimulation(): void {
       log("Moderator synthesizing the brief");
 
       try {
-        const { brief } = await requestModerator(
+        const result = await requestModerator(
           store().question,
           plan,
           perspectives,
@@ -170,7 +178,11 @@ export function useStrategySimulation(): void {
         }
         // complete — the validated decision brief stamps in (wax-seal reveal).
         store().advanceStage("complete");
-        store().setBrief(brief);
+        store().setBrief(result.brief);
+        store().recordUsage(result.usage, {
+          cacheHit: result.cacheHit,
+          latencyMs: result.latencyMs,
+        });
         log("Decision brief sealed");
         store().sealTimeline();
       } catch (error) {

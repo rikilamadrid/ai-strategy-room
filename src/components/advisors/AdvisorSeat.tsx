@@ -3,13 +3,10 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import { advisorRetryResults } from "@/lib/fixtures";
+import { requestRegenerateAdvisor } from "@/lib/ai/strategy-api";
 import { NEON_FLICKER_OPACITY, NEON_FLICKER_TIMES, tickEase } from "@/lib/motion";
 import { useStrategyStore } from "@/stores/strategy-store";
 import type { Advisor } from "@/types/strategy";
-
-// How long a re-run advisor spends ticking before its new argument settles.
-const RETRY_THINKING_MS = 1400;
 
 type SeatVisual = {
   /** Status label shown beneath the advisor name. */
@@ -71,56 +68,69 @@ const TICK_SWEEP = [-40, 40];
 export function AdvisorSeat({ advisor }: { advisor: Advisor }) {
   const reduceMotion = useReducedMotion();
   const isReplaying = useStrategyStore((state) => state.isReplaying);
+  const question = useStrategyStore((state) => state.question);
+  const plan = useStrategyStore((state) => state.plan);
   const setAdvisorStatus = useStrategyStore((state) => state.setAdvisorStatus);
   const setAdvisorResult = useStrategyStore((state) => state.setAdvisorResult);
-  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recordUsage = useStrategyStore((state) => state.recordUsage);
+  const retryController = useRef<AbortController | null>(null);
 
   const visual = SEAT_VISUALS[advisor.status];
   const isThinking = advisor.status === "thinking";
   const isComplete = advisor.status === "complete";
   // "Try another angle" only makes sense once an advisor has settled — a
-  // resolved argument to reconsider, or a fault to recover from.
+  // resolved argument to reconsider, or a fault to recover from. It also needs
+  // the session's validated plan, which lands once the planner call resolves.
   const showRetry = advisor.status === "complete" || advisor.status === "error";
-  const canRetry = showRetry && !isReplaying;
+  const canRetry = showRetry && !isReplaying && Boolean(plan);
 
   useEffect(
     () => () => {
-      if (retryTimer.current) {
-        clearTimeout(retryTimer.current);
-      }
+      retryController.current?.abort();
     },
     [],
   );
 
-  // Re-run this one advisor without touching the rest of the workflow: it
+  // Re-run this one advisor without touching the rest of the workflow: a real
+  // single-advisor call (feature 16), not the planner or moderator. It
   // re-enters `thinking` (needle ticks against real state) and settles back to
-  // `complete` with an alternate fixture argument. No new stage transitions,
-  // no moderator rerun — a timer, not a network call.
+  // `complete` with the fresh perspective, or `error` on a faulted call.
   const handleRetry = () => {
-    if (!canRetry) {
+    if (!canRetry || !plan) {
       return;
     }
 
-    if (retryTimer.current) {
-      clearTimeout(retryTimer.current);
-    }
+    retryController.current?.abort();
+    const controller = new AbortController();
+    retryController.current = controller;
 
     setAdvisorStatus(advisor.id, "thinking");
-    const next = advisorRetryResults[advisor.id];
 
-    retryTimer.current = setTimeout(() => {
-      setAdvisorResult(
-        advisor.id,
-        next
-          ? {
-              argument: next.argument,
-              confidence: next.confidence,
-              risks: next.risks,
-              status: "complete",
-            }
-          : { status: "complete" },
-      );
-    }, RETRY_THINKING_MS);
+    void (async () => {
+      try {
+        const result = await requestRegenerateAdvisor(
+          question,
+          plan,
+          advisor.id,
+          controller.signal,
+        );
+        if (controller.signal.aborted) {
+          return;
+        }
+        setAdvisorResult(advisor.id, {
+          argument: result.perspective.argument,
+          confidence: result.perspective.confidence,
+          risks: result.perspective.risks,
+          status: "complete",
+        });
+        recordUsage(result.usage, { cacheHit: result.cacheHit, latencyMs: result.latencyMs });
+      } catch {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setAdvisorResult(advisor.id, { status: "error" });
+      }
+    })();
   };
 
   // Idle/complete/error: needle settles to its resting angle. Thinking: it
