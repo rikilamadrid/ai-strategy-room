@@ -9,6 +9,8 @@ MINOR version and fixes bump the PATCH version.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-03
+
 ### Added
 
 - Streaming simulation: posing a question now drives a timed, fixture-backed progression through the workflow (planning → advisors deliberating in parallel → mapping → moderating → complete). Purely client-side on a timer — no network calls, no cost-budget impact (feature 09).
@@ -43,5 +45,6 @@ posing a question and convening the table. (No AI integration yet.)
 - Default `src/app/favicon.ico`, in favor of the brand `favicon.ico` served from `public/` — the app-dir convention broke the build on the non-RGBA icon and overrode the public file (feature 04).
 - Create Next App default boilerplate: SVGs and AGENTS.md (initial scaffold).
 
-[Unreleased]: https://github.com/rikilamadrid/devstash/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/rikilamadrid/devstash/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/rikilamadrid/devstash/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/rikilamadrid/devstash/releases/tag/v0.2.0
