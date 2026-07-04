@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented — feature 11 (`feature/timeline-replay`) is coded on the feature branch. `npm run lint` and `npm run build` pass; local server is available at `http://localhost:3004/`. Manual browser verification is still pending because automated browser control was unavailable in this session. Feature 10 is complete and already logged in `context/HISTORY.md` and `CHANGELOG.md`. This feature closes out **Phase 2 — Workflow state**.
+Complete — feature 11 (`feature/timeline-replay`) is merged to `main`, the feature branch is pruned, and the entry is logged in `context/HISTORY.md` and `CHANGELOG.md`. `npm run lint` and `npm run build` pass; Ricardo confirmed the replay flow in the browser. This feature closes out **Phase 2 — Workflow state**. Next up: Phase 3 — AI integration.
 
 ## Goals
 
