@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { demoStrategySession } from "@/lib/fixtures";
+import type { PlannerOutput } from "@/lib/ai/schemas";
 import type {
   Advisor,
   DecisionBrief,
@@ -47,6 +48,8 @@ export interface StrategyStoreState extends StrategyStoreSnapshot {
   setQuestion: (question: string) => void;
   startSession: (question?: string) => void;
   advanceStage: (nextStatus?: WorkflowStatus) => boolean;
+  applyPlannerResult: (result: PlannerOutput, timestampLabel: string) => void;
+  failWorkflow: (message: string, timestampLabel: string) => void;
   setAdvisorStatus: (id: Advisor["id"], status: Advisor["status"]) => void;
   setAdvisorResult: (id: Advisor["id"], patch: AdvisorResultPatch) => void;
   appendTimelineEvent: (event: TimelineEvent) => void;
@@ -165,6 +168,67 @@ export const useStrategyStore = create<StrategyStoreState>((set) => ({
         runId: state.runId + 1,
         isReplaying: false,
         briefAnimationKey: 0,
+      };
+    });
+  },
+  applyPlannerResult: (result, timestampLabel) => {
+    // The planner's chosen roles replace the demo-seeded roster mid-`planning`,
+    // and its extracted constraints stamp the first live timeline row. Guarded to
+    // the `planning` stage so a late/duplicate response can't overwrite a session
+    // that has already moved on (mirrors `setBrief`'s stage guard).
+    set((state) => {
+      if (state.status !== "planning") {
+        return state;
+      }
+
+      const advisors: Advisor[] = result.advisors.map(({ id, name, purpose }) => ({
+        id,
+        name,
+        purpose,
+        status: "waiting" as const,
+      }));
+
+      const message = result.constraints.length
+        ? `Constraints parsed — ${result.constraints.join(", ")}`
+        : "Constraints parsed — none stated";
+      const constraintEvent: TimelineEvent = {
+        message,
+        timestampLabel,
+        state: "now",
+      };
+
+      return {
+        advisors,
+        timeline: [
+          ...state.timeline.map((event) =>
+            event.state === "now" ? { ...event, state: "done" as const } : event,
+          ),
+          constraintEvent,
+        ],
+        replayLog: [...state.replayLog, cloneTimelineEvent(constraintEvent)],
+      };
+    });
+  },
+  failWorkflow: (message, timestampLabel) => {
+    // A workflow-level fault (e.g. the planner call failing) moves the session to
+    // `error` and stamps a permanent error row — reusing the feature-10 error
+    // timeline treatment. No-op if the current stage can't transition to `error`.
+    set((state) => {
+      if (!canTransitionWorkflow(state.status, "error")) {
+        return state;
+      }
+
+      const errorEvent: TimelineEvent = { message, timestampLabel, state: "error" };
+
+      return {
+        status: "error",
+        timeline: [
+          ...state.timeline.map((event) =>
+            event.state === "now" ? { ...event, state: "done" as const } : event,
+          ),
+          errorEvent,
+        ],
+        replayLog: [...state.replayLog, cloneTimelineEvent(errorEvent)],
       };
     });
   },
